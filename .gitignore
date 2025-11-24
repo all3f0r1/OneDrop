@@ -1,0 +1,27 @@
+# Rust
+/target
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test data (presets are large)
+/presets-cream-of-the-crop/
+/test-presets/
+
+# Build artifacts
+*.o
+*.so
+*.dylib
+*.dll
+*.exe

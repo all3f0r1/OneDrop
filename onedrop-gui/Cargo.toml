@@ -1,6 +1,6 @@
 [package]
 name = "onedrop-gui"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Manus AI"]
 license = "MIT"
@@ -12,9 +12,9 @@ path = "src/main.rs"
 
 [dependencies]
 # OneDrop engine
-milk-engine = { path = "../milk-engine" }
-milk-parser = { path = "../milk-parser" }
-milk-renderer = { path = "../milk-renderer" }
+onedrop-engine = { path = "../onedrop-engine" }
+onedrop-parser = { path = "../onedrop-parser" }
+onedrop-renderer = { path = "../onedrop-renderer" }
 
 # Window and events
 winit = "0.30"

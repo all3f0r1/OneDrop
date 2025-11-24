@@ -1,0 +1,35 @@
+[package]
+name = "onedrop-engine"
+version = "0.2.0"
+edition = "2021"
+authors = ["Manus AI"]
+license = "MIT"
+description = "Complete Milkdrop visualization engine assembling parser, evaluator, and renderer"
+
+[dependencies]
+# Internal crates
+onedrop-parser = { path = "../onedrop-parser" }
+onedrop-eval = { path = "../onedrop-eval" }
+onedrop-renderer = { path = "../onedrop-renderer" }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Async runtime
+pollster = "0.3"
+
+# Logging
+log = "0.4"
+
+[dev-dependencies]
+env_logger = "0.11"
+approx = "0.5"
+
+[[example]]
+name = "basic"
+path = "examples/basic.rs"
+
+[[example]]
+name = "audio_reactive"
+path = "examples/audio_reactive.rs"

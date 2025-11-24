@@ -1,6 +1,6 @@
 [package]
 name = "onedrop-cli"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Manus AI"]
 license = "MIT"
@@ -12,8 +12,8 @@ path = "src/main.rs"
 
 [dependencies]
 # OneDrop engine
-milk-engine = { path = "../milk-engine" }
-milk-parser = { path = "../milk-parser" }
+onedrop-engine = { path = "../onedrop-engine" }
+onedrop-parser = { path = "../onedrop-parser" }
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }

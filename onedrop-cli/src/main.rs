@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
-use milk_engine::{EngineConfig, MilkEngine, PresetManager, RenderConfig};
+use onedrop_engine::{EngineConfig, MilkEngine, PresetManager, RenderConfig};
 use std::path::PathBuf;
 
 #[derive(Parser)]

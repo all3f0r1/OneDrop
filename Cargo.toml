@@ -1,35 +1,20 @@
 [workspace]
 members = [
-    "onedrop-gui",
+    "onedrop-parser",
+    "onedrop-eval",
+    "onedrop-renderer",
+    "onedrop-engine",
     "onedrop-cli",
-    "milk-engine",
-    "milk-renderer",
-    "milk-eval",
-    "milk-parser",
+    "onedrop-gui",
 ]
-resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Manus AI"]
 license = "MIT"
 
-[workspace.dependencies]
-# Error handling
-thiserror = "2.0"
-anyhow = "1.0"
-
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-
 [profile.release]
 opt-level = 3
-lto = "thin"
+lto = true
 codegen-units = 1
-strip = true
-panic = "abort"
-
-[profile.dev]
-opt-level = 0
-debug = true

@@ -1,0 +1,26 @@
+[package]
+name = "onedrop-eval"
+version = "0.2.0"
+edition = "2021"
+authors = ["Manus AI"]
+license = "MIT"
+description = "Expression evaluator for Milkdrop per-frame and per-pixel equations"
+
+[dependencies]
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Expression evaluation
+evalexpr = "12.1"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+
+# Logging
+log = "0.4"
+
+[dev-dependencies]
+# Testing
+pretty_assertions = "1.4"
+approx = "0.5"

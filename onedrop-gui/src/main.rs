@@ -1,7 +1,7 @@
 //! OneDrop GUI - Graphical user interface for Milkdrop visualizations
 
 use anyhow::Result;
-use milk_engine::{EngineConfig, MilkEngine, PresetManager, RenderConfig};
+use onedrop_engine::{EngineConfig, MilkEngine, PresetManager, RenderConfig};
 use std::sync::Arc;
 use std::time::Instant;
 use winit::{

@@ -1,0 +1,31 @@
+[package]
+name = "onedrop-gui"
+version = "0.1.0"
+edition = "2021"
+authors = ["Manus AI"]
+license = "MIT"
+description = "Graphical user interface for OneDrop Milkdrop visualizer"
+
+[[bin]]
+name = "onedrop-gui"
+path = "src/main.rs"
+
+[dependencies]
+# OneDrop engine
+milk-engine = { path = "../milk-engine" }
+milk-parser = { path = "../milk-parser" }
+milk-renderer = { path = "../milk-renderer" }
+
+# Window and events
+winit = "0.30"
+wgpu = "22.1"
+
+# Logging
+env_logger = "0.11"
+log = "0.4"
+
+# Error handling
+anyhow = "1.0"
+
+# Async
+pollster = "0.3"

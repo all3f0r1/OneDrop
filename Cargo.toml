@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "onedrop-gui",
+    "onedrop-cli",
     "milk-engine",
     "milk-renderer",
     "milk-eval",

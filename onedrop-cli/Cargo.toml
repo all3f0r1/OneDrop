@@ -1,0 +1,32 @@
+[package]
+name = "onedrop-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Manus AI"]
+license = "MIT"
+description = "Command-line interface for OneDrop Milkdrop visualizer"
+
+[[bin]]
+name = "onedrop"
+path = "src/main.rs"
+
+[dependencies]
+# OneDrop engine
+milk-engine = { path = "../milk-engine" }
+milk-parser = { path = "../milk-parser" }
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Logging
+env_logger = "0.11"
+log = "0.4"
+
+# Error handling
+anyhow = "1.0"
+
+# Async runtime
+pollster = "0.3"
+
+# Image export
+image = "0.25"

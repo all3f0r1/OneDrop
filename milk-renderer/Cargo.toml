@@ -1,0 +1,32 @@
+[package]
+name = "milk-renderer"
+version = "0.1.0"
+edition = "2021"
+authors = ["Manus AI"]
+license = "MIT"
+description = "GPU rendering pipeline for Milkdrop visualizations using wgpu"
+
+[dependencies]
+# GPU rendering
+wgpu = "22.1"
+bytemuck = { version = "1.14", features = ["derive"] }
+
+# Math
+glam = "0.29"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+
+# Image handling
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+# Async runtime (for wgpu)
+pollster = "0.3"
+
+[dev-dependencies]
+# Testing
+env_logger = "0.11"

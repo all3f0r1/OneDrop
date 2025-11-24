@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "milk-engine",
     "milk-renderer",
     "milk-eval",
     "milk-parser",

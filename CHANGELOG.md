@@ -5,6 +5,26 @@ All notable changes to OneDrop will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0-dev] - 2025-11-25 (In Progress)
+
+### Added
+- **onedrop-codegen**: WGSL shader code generation from Milkdrop equations
+  - Expression transpiler (Milkdrop → WGSL)
+  - Variable mapper (all Milkdrop variables supported)
+  - Shader generator (complete per-pixel shaders)
+  - 13 unit tests
+- **onedrop-hlsl**: HLSL to WGSL translation
+  - Type replacements (float4 → vec4<f32>)
+  - Function replacements (lerp → mix, saturate → clamp)
+  - Texture sampling conversion
+  - 4 unit tests
+
+### In Progress
+- Dynamic shader compilation with naga
+- Per-pixel shader execution in renderer
+- Testing with 1000+ presets
+- 95%+ preset compatibility target
+
 ## [0.4.0] - 2025-11-25
 
 ### Added

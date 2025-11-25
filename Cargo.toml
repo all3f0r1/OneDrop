@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "onedrop-hlsl",
+    "onedrop-codegen",
     "onedrop-parser",
     "onedrop-eval",
     "onedrop-renderer",

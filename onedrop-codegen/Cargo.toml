@@ -1,0 +1,24 @@
+[package]
+name = "onedrop-codegen"
+version = "0.5.0"
+edition = "2021"
+authors = ["Manus AI"]
+license = "MIT"
+description = "WGSL shader code generation from Milkdrop equations"
+
+[dependencies]
+# Parser dependencies
+onedrop-parser = { path = "../onedrop-parser" }
+
+# Code generation
+thiserror = "1.0"
+log = "0.4"
+
+# Expression parsing
+evalexpr = "13.0"
+
+# Shader validation
+naga = { version = "22.0", features = ["wgsl-in", "wgsl-out"] }
+
+[dev-dependencies]
+env_logger = "0.11"

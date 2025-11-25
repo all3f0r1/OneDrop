@@ -92,7 +92,7 @@ fn cmd_info(preset_path: PathBuf) -> Result<()> {
     let content = std::fs::read_to_string(&preset_path)
         .context("Failed to read preset file")?;
     
-    let preset = milk_parser::parse_preset(&content)
+    let preset = onedrop_parser::parse_preset(&content)
         .context("Failed to parse preset")?;
     
     println!("\n=== Preset Information ===\n");
@@ -103,7 +103,7 @@ fn cmd_info(preset_path: PathBuf) -> Result<()> {
     println!("\n--- Parameters ---");
     println!("Zoom: {}", preset.parameters.zoom);
     println!("Rotation: {}", preset.parameters.rot);
-    println!("Decay: {}", preset.parameters.decay);
+    println!("Decay: {}", preset.parameters.decay());
     println!("Wave color: R={}, G={}, B={}", 
              preset.parameters.wave_r,
              preset.parameters.wave_g,
@@ -140,7 +140,7 @@ fn cmd_validate(preset_path: PathBuf) -> Result<()> {
     let content = std::fs::read_to_string(&preset_path)
         .context("Failed to read preset file")?;
     
-    match milk_parser::parse_preset(&content) {
+    match onedrop_parser::parse_preset(&content) {
         Ok(preset) => {
             println!("✓ Preset is valid!");
             println!("  Version: {}", preset.version);

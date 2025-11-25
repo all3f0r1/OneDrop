@@ -40,7 +40,7 @@ fn test_200_random_presets() {
                 
                 // Basic validation
                 assert!(preset.version > 0, "Invalid version in {:?}", path);
-                assert!(preset.parameters.decay >= 0.0 && preset.parameters.decay <= 1.0,
+                assert!(preset.parameters.decay() >= 0.0 && preset.parameters.decay() <= 1.0,
                        "Invalid decay in {:?}", path);
             }
             Err(e) => {

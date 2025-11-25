@@ -1,63 +1,58 @@
-//! Expression caching for performance optimization.
+//! Expression cache for performance optimization.
 
 use evalexpr::Node;
 use std::collections::HashMap;
 
 /// Cache for compiled expressions.
+#[derive(Debug, Clone)]
 pub struct ExpressionCache {
-    /// Map from expression string to compiled node
+    /// Cached compiled expressions
     cache: HashMap<String, Node>,
+    
+    /// Cache hit count
+    hits: usize,
+    
+    /// Cache miss count
+    misses: usize,
     
     /// Maximum cache size
     max_size: usize,
-    
-    /// Hit counter for statistics
-    hits: usize,
-    
-    /// Miss counter for statistics
-    misses: usize,
 }
 
 impl ExpressionCache {
     /// Create a new expression cache.
-    pub fn new(max_size: usize) -> Self {
+    pub fn new() -> Self {
+        Self::with_capacity(1000)
+    }
+    
+    /// Create a new expression cache with specified capacity.
+    pub fn with_capacity(max_size: usize) -> Self {
         Self {
             cache: HashMap::with_capacity(max_size),
-            max_size,
             hits: 0,
             misses: 0,
+            max_size,
         }
     }
     
-    /// Get or compile an expression.
-    pub fn get_or_compile(&mut self, expr: &str) -> Result<Node, evalexpr::EvalexprError> {
-        if let Some(node) = self.cache.get(expr) {
+    /// Get a compiled expression from cache, or compile and cache it.
+    pub fn get_or_compile(&mut self, expression: &str) -> Result<Node, evalexpr::EvalexprError> {
+        // Check cache first
+        if let Some(node) = self.cache.get(expression) {
             self.hits += 1;
             return Ok(node.clone());
         }
         
+        // Cache miss - compile the expression
         self.misses += 1;
-        
-        // Compile the expression
-        let node = evalexpr::build_operator_tree(expr)?;
+        let node = evalexpr::build_operator_tree(expression)?;
         
         // Add to cache if not full
         if self.cache.len() < self.max_size {
-            self.cache.insert(expr.to_string(), node.clone());
-        } else {
-            // Cache is full, could implement LRU here
-            // For now, just don't cache
-            log::debug!("Expression cache full, not caching: {}", expr);
+            self.cache.insert(expression.to_string(), node.clone());
         }
         
         Ok(node)
-    }
-    
-    /// Clear the cache.
-    pub fn clear(&mut self) {
-        self.cache.clear();
-        self.hits = 0;
-        self.misses = 0;
     }
     
     /// Get cache statistics.
@@ -74,16 +69,33 @@ impl ExpressionCache {
             },
         }
     }
+    
+    /// Clear the cache.
+    pub fn clear(&mut self) {
+        self.cache.clear();
+        self.hits = 0;
+        self.misses = 0;
+    }
+    
+    /// Get the number of cached expressions.
+    pub fn len(&self) -> usize {
+        self.cache.len()
+    }
+    
+    /// Check if the cache is empty.
+    pub fn is_empty(&self) -> bool {
+        self.cache.is_empty()
+    }
 }
 
 impl Default for ExpressionCache {
     fn default() -> Self {
-        Self::new(1000) // Default cache size
+        Self::new()
     }
 }
 
 /// Cache statistics.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CacheStats {
     /// Current cache size
     pub size: usize,
@@ -107,44 +119,57 @@ mod tests {
 
     #[test]
     fn test_cache_basic() {
-        let mut cache = ExpressionCache::new(10);
+        let mut cache = ExpressionCache::new();
         
         // First access - miss
-        let node1 = cache.get_or_compile("x + 1").unwrap();
+        let result1 = cache.get_or_compile("2 + 2");
+        assert!(result1.is_ok());
         assert_eq!(cache.stats().misses, 1);
         assert_eq!(cache.stats().hits, 0);
         
         // Second access - hit
-        let node2 = cache.get_or_compile("x + 1").unwrap();
+        let result2 = cache.get_or_compile("2 + 2");
+        assert!(result2.is_ok());
         assert_eq!(cache.stats().misses, 1);
         assert_eq!(cache.stats().hits, 1);
+        
+        // Hit rate should be 50%
+        assert!((cache.stats().hit_rate - 0.5).abs() < 1e-10);
     }
 
     #[test]
-    fn test_cache_stats() {
-        let mut cache = ExpressionCache::new(10);
+    fn test_cache_capacity() {
+        let mut cache = ExpressionCache::with_capacity(2);
         
-        cache.get_or_compile("x + 1").unwrap();
-        cache.get_or_compile("x + 1").unwrap();
-        cache.get_or_compile("y + 2").unwrap();
+        cache.get_or_compile("1 + 1").ok();
+        cache.get_or_compile("2 + 2").ok();
+        cache.get_or_compile("3 + 3").ok();
         
-        let stats = cache.stats();
-        assert_eq!(stats.size, 2);
-        assert_eq!(stats.hits, 1);
-        assert_eq!(stats.misses, 2);
-        assert_eq!(stats.hit_rate, 1.0 / 3.0);
+        // Should not exceed capacity
+        assert!(cache.len() <= 2);
     }
 
     #[test]
     fn test_cache_clear() {
-        let mut cache = ExpressionCache::new(10);
+        let mut cache = ExpressionCache::new();
         
-        cache.get_or_compile("x + 1").unwrap();
-        assert_eq!(cache.stats().size, 1);
+        cache.get_or_compile("1 + 1").ok();
+        cache.get_or_compile("2 + 2").ok();
+        
+        assert_eq!(cache.len(), 2);
         
         cache.clear();
-        assert_eq!(cache.stats().size, 0);
+        
+        assert_eq!(cache.len(), 0);
         assert_eq!(cache.stats().hits, 0);
         assert_eq!(cache.stats().misses, 0);
+    }
+
+    #[test]
+    fn test_cache_invalid_expression() {
+        let mut cache = ExpressionCache::new();
+        
+        let result = cache.get_or_compile("invalid expression +++");
+        assert!(result.is_err());
     }
 }

@@ -12,13 +12,13 @@ pub enum EngineError {
     PresetLoadFailed(String),
     
     /// Preset parsing failed
-    PresetParseFailed(milk_parser::ParseError),
+    PresetParseFailed(onedrop_parser::ParseError),
     
     /// Expression evaluation failed
-    EvalFailed(milk_eval::EvalError),
+    EvalFailed(onedrop_eval::EvalError),
     
     /// Rendering failed
-    RenderFailed(milk_renderer::RenderError),
+    RenderFailed(onedrop_renderer::RenderError),
     
     /// No preset loaded
     NoPresetLoaded,
@@ -60,20 +60,20 @@ impl fmt::Display for EngineError {
 
 impl std::error::Error for EngineError {}
 
-impl From<milk_parser::ParseError> for EngineError {
-    fn from(err: milk_parser::ParseError) -> Self {
+impl From<onedrop_parser::ParseError> for EngineError {
+    fn from(err: onedrop_parser::ParseError) -> Self {
         EngineError::PresetParseFailed(err)
     }
 }
 
-impl From<milk_eval::EvalError> for EngineError {
-    fn from(err: milk_eval::EvalError) -> Self {
+impl From<onedrop_eval::EvalError> for EngineError {
+    fn from(err: onedrop_eval::EvalError) -> Self {
         EngineError::EvalFailed(err)
     }
 }
 
-impl From<milk_renderer::RenderError> for EngineError {
-    fn from(err: milk_renderer::RenderError) -> Self {
+impl From<onedrop_renderer::RenderError> for EngineError {
+    fn from(err: onedrop_renderer::RenderError) -> Self {
         EngineError::RenderFailed(err)
     }
 }

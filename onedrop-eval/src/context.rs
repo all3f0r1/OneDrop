@@ -1,6 +1,6 @@
-//! Execution context for Milkdrop equations.
+//! Execution context for Milkdrop expressions.
 
-use evalexpr::{HashMapContext, Context as EvalContext, Value};
+use evalexpr::{Context, ContextWithMutableVariables, HashMapContext, Value};
 use std::collections::HashMap;
 
 /// Execution context containing all Milkdrop variables.
@@ -103,46 +103,18 @@ impl MilkContext {
         ctx.set_value("echo_alpha".to_string(), Value::Float(0.0)).ok();
         ctx.set_value("echo_orient".to_string(), Value::Float(0.0)).ok();
         
-        // Miscellaneous
-        ctx.set_value("gamma".to_string(), Value::Float(1.0)).ok();
-        ctx.set_value("darken_center".to_string(), Value::Float(0.0)).ok();
-        ctx.set_value("wrap".to_string(), Value::Float(1.0)).ok();
-        ctx.set_value("invert".to_string(), Value::Float(0.0)).ok();
-        ctx.set_value("brighten".to_string(), Value::Float(0.0)).ok();
-        ctx.set_value("darken".to_string(), Value::Float(0.0)).ok();
-        ctx.set_value("solarize".to_string(), Value::Float(0.0)).ok();
-        
-        // Monitor aspect ratio
-        ctx.set_value("aspectx".to_string(), Value::Float(1.0)).ok();
-        ctx.set_value("aspecty".to_string(), Value::Float(1.0)).ok();
-        
-        // Pixel position (normalized 0-1)
-        ctx.set_value("pixelsx".to_string(), Value::Float(1024.0)).ok();
-        ctx.set_value("pixelsy".to_string(), Value::Float(768.0)).ok();
-        
-        // Progress (for preset transitions)
-        ctx.set_value("progress".to_string(), Value::Float(0.0)).ok();
-        
-        // Beat detection
-        ctx.set_value("beat".to_string(), Value::Float(0.0)).ok();
-    }
-    
-    /// Get the internal evalexpr context.
-    pub fn inner(&self) -> &HashMapContext {
-        &self.context
-    }
-    
-    /// Get a mutable reference to the internal context.
-    pub fn inner_mut(&mut self) -> &mut HashMapContext {
-        &mut self.context
+        // Initialize q variables (q1-q64)
+        for i in 1..=64 {
+            ctx.set_value(format!("q{}", i), Value::Float(0.0)).ok();
+        }
     }
     
     /// Set a variable value.
-    pub fn set_var(&mut self, name: &str, value: f64) {
-        // Handle q variables specially
+    pub fn set(&mut self, name: &str, value: f64) {
+        // Check if it's a q variable
         if name.starts_with('q') && name.len() > 1 {
             if let Ok(index) = name[1..].parse::<usize>() {
-                if index >= 1 && index <= 64 {
+                if index > 0 && index <= 64 {
                     self.q_vars[index - 1] = value;
                     self.context.set_value(name.to_string(), Value::Float(value)).ok();
                     return;
@@ -150,74 +122,107 @@ impl MilkContext {
             }
         }
         
-        // Regular variable
+        // Set in context
         self.context.set_value(name.to_string(), Value::Float(value)).ok();
-        self.custom_vars.insert(name.to_string(), value);
+        
+        // Track custom variables
+        if !self.is_builtin(name) {
+            self.custom_vars.insert(name.to_string(), value);
+        }
     }
     
     /// Get a variable value.
-    pub fn get_var(&self, name: &str) -> Option<f64> {
-        // Handle q variables
+    pub fn get(&self, name: &str) -> Option<f64> {
+        // Check if it's a q variable
         if name.starts_with('q') && name.len() > 1 {
             if let Ok(index) = name[1..].parse::<usize>() {
-                if index >= 1 && index <= 64 {
+                if index > 0 && index <= 64 {
                     return Some(self.q_vars[index - 1]);
                 }
             }
         }
         
-        // Try context first
-        if let Ok(value) = self.context.get_value(name) {
-            if let Value::Float(f) = value {
-                return Some(*f);
-            } else if let Value::Int(i) = value {
-                return Some(*i as f64);
-            }
+        // Get from context (evalexpr 13.0 API)
+        match self.context.get_value(name) {
+            Some(value) => match value {
+                Value::Float(f) => Some(*f),
+                Value::Int(i) => Some(*i as f64),
+                Value::Boolean(b) => Some(if *b { 1.0 } else { 0.0 }),
+                _ => None,
+            },
+            None => None,
         }
-        
-        // Try custom vars
-        self.custom_vars.get(name).copied()
+    }
+    
+    /// Check if a variable name is a built-in Milkdrop variable.
+    fn is_builtin(&self, name: &str) -> bool {
+        matches!(
+            name,
+            "time" | "frame" | "fps" |
+            "bass" | "mid" | "treb" | "bass_att" | "mid_att" | "treb_att" |
+            "x" | "y" | "rad" | "ang" |
+            "zoom" | "zoomexp" | "rot" | "warp" | "cx" | "cy" | "dx" | "dy" | "sx" | "sy" |
+            "wave_r" | "wave_g" | "wave_b" | "wave_a" | "wave_x" | "wave_y" | "wave_mystery" | "wave_mode" |
+            "ob_size" | "ob_r" | "ob_g" | "ob_b" | "ob_a" |
+            "ib_size" | "ib_r" | "ib_g" | "ib_b" | "ib_a" |
+            "mv_x" | "mv_y" | "mv_dx" | "mv_dy" | "mv_l" | "mv_r" | "mv_g" | "mv_b" | "mv_a" |
+            "decay" | "echo_zoom" | "echo_alpha" | "echo_orient"
+        ) || (name.starts_with('q') && name.len() > 1)
+    }
+    
+    /// Get the internal evalexpr context.
+    pub fn inner(&self) -> &HashMapContext {
+        &self.context
+    }
+    
+    /// Get a mutable reference to the internal evalexpr context.
+    pub fn inner_mut(&mut self) -> &mut HashMapContext {
+        &mut self.context
+    }
+    
+    /// Get all q variables.
+    pub fn q_vars(&self) -> &[f64; 64] {
+        &self.q_vars
+    }
+    
+    /// Get all custom variables.
+    pub fn custom_vars(&self) -> &HashMap<String, f64> {
+        &self.custom_vars
+    }
+    
+    /// Set pixel position for per-pixel evaluation.
+    pub fn set_pixel(&mut self, x: f64, y: f64, rad: f64, ang: f64) {
+        self.set("x", x);
+        self.set("y", y);
+        self.set("rad", rad);
+        self.set("ang", ang);
+    }
+    
+    /// Set a variable (alias for set).
+    pub fn set_var(&mut self, name: &str, value: f64) {
+        self.set(name, value);
     }
     
     /// Set time variable.
     pub fn set_time(&mut self, time: f64) {
-        self.set_var("time", time);
+        self.set("time", time);
     }
     
     /// Set frame variable.
     pub fn set_frame(&mut self, frame: f64) {
-        self.set_var("frame", frame);
+        self.set("frame", frame);
     }
     
-    /// Set audio variables.
-    pub fn set_audio(&mut self, bass: f64, mid: f64, treb: f64, bass_att: f64, mid_att: f64, treb_att: f64) {
-        self.set_var("bass", bass);
-        self.set_var("mid", mid);
-        self.set_var("treb", treb);
-        self.set_var("bass_att", bass_att);
-        self.set_var("mid_att", mid_att);
-        self.set_var("treb_att", treb_att);
+    /// Set audio variables (bass, mid, treble).
+    pub fn set_audio(&mut self, bass: f64, mid: f64, treb: f64) {
+        self.set("bass", bass);
+        self.set("mid", mid);
+        self.set("treb", treb);
     }
     
-    /// Set pixel position (for per-pixel equations).
-    pub fn set_pixel(&mut self, x: f64, y: f64, rad: f64, ang: f64) {
-        self.set_var("x", x);
-        self.set_var("y", y);
-        self.set_var("rad", rad);
-        self.set_var("ang", ang);
-    }
-    
-    /// Initialize q variables from array.
-    pub fn init_q_vars(&mut self, q_values: &[f64]) {
-        for (i, &value) in q_values.iter().enumerate().take(64) {
-            let var_name = format!("q{}", i + 1);
-            self.set_var(&var_name, value);
-        }
-    }
-    
-    /// Get all q variables as array.
-    pub fn get_q_vars(&self) -> [f64; 64] {
-        self.q_vars
+    /// Get a variable value (alias for get).
+    pub fn get_var(&self, name: &str) -> Option<f64> {
+        self.get(name)
     }
 }
 
@@ -232,38 +237,48 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_context_creation() {
+    fn test_create_context() {
         let ctx = MilkContext::new();
-        assert_eq!(ctx.get_var("time"), Some(0.0));
-        assert_eq!(ctx.get_var("zoom"), Some(1.0));
+        assert_eq!(ctx.get("time"), Some(0.0));
+        assert_eq!(ctx.get("fps"), Some(60.0));
     }
 
     #[test]
-    fn test_set_get_var() {
+    fn test_set_get_variable() {
         let mut ctx = MilkContext::new();
-        ctx.set_var("test", 42.0);
-        assert_eq!(ctx.get_var("test"), Some(42.0));
+        
+        ctx.set("bass", 1.5);
+        assert_eq!(ctx.get("bass"), Some(1.5));
+        
+        ctx.set("custom_var", 42.0);
+        assert_eq!(ctx.get("custom_var"), Some(42.0));
     }
 
     #[test]
     fn test_q_variables() {
         let mut ctx = MilkContext::new();
-        ctx.set_var("q1", 1.0);
-        ctx.set_var("q32", 32.0);
-        ctx.set_var("q64", 64.0);
         
-        assert_eq!(ctx.get_var("q1"), Some(1.0));
-        assert_eq!(ctx.get_var("q32"), Some(32.0));
-        assert_eq!(ctx.get_var("q64"), Some(64.0));
+        // Test all 64 q variables
+        for i in 1..=64 {
+            let name = format!("q{}", i);
+            ctx.set(&name, i as f64);
+            assert_eq!(ctx.get(&name), Some(i as f64));
+        }
+        
+        // Verify q_vars array
+        assert_eq!(ctx.q_vars()[0], 1.0);
+        assert_eq!(ctx.q_vars()[63], 64.0);
     }
 
     #[test]
-    fn test_audio_vars() {
+    fn test_custom_variables() {
         let mut ctx = MilkContext::new();
-        ctx.set_audio(0.5, 0.6, 0.7, 0.8, 0.9, 1.0);
         
-        assert_eq!(ctx.get_var("bass"), Some(0.5));
-        assert_eq!(ctx.get_var("mid"), Some(0.6));
-        assert_eq!(ctx.get_var("treb"), Some(0.7));
+        ctx.set("my_var", 123.0);
+        ctx.set("another_var", 456.0);
+        
+        assert_eq!(ctx.custom_vars().len(), 2);
+        assert_eq!(ctx.custom_vars().get("my_var"), Some(&123.0));
+        assert_eq!(ctx.custom_vars().get("another_var"), Some(&456.0));
     }
 }

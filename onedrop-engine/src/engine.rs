@@ -5,6 +5,7 @@ use crate::error::{EngineError, Result};
 use onedrop_eval::MilkEvaluator;
 use onedrop_parser::{parse_preset, MilkPreset};
 use onedrop_renderer::{MilkRenderer, MotionParams, RenderConfig, RenderState, WaveParams};
+use wgpu;
 use std::fs;
 use std::path::Path;
 
@@ -100,7 +101,7 @@ impl MilkEngine {
         
         // Set motion parameters
         ctx.set_var("zoom", params.zoom as f64);
-        ctx.set_var("zoomexp", params.zoomexp as f64);
+        ctx.set_var("zoomexp", params.zoomexp() as f64);
         ctx.set_var("rot", params.rot as f64);
         ctx.set_var("warp", params.warp as f64);
         ctx.set_var("cx", params.cx as f64);
@@ -114,22 +115,22 @@ impl MilkEngine {
         ctx.set_var("wave_r", params.wave_r as f64);
         ctx.set_var("wave_g", params.wave_g as f64);
         ctx.set_var("wave_b", params.wave_b as f64);
-        ctx.set_var("wave_a", params.wave_a as f64);
+        ctx.set_var("wave_a", params.wave_a() as f64);
         ctx.set_var("wave_x", params.wave_x as f64);
         ctx.set_var("wave_y", params.wave_y as f64);
-        ctx.set_var("wave_mode", params.wave_mode as f64);
+        ctx.set_var("wave_mode", params.wave_mode() as f64);
         
         // Set other parameters
-        ctx.set_var("decay", params.decay as f64);
-        ctx.set_var("gamma", params.gamma as f64);
-        ctx.set_var("echo_zoom", params.echo_zoom as f64);
-        ctx.set_var("echo_alpha", params.echo_alpha as f64);
-        ctx.set_var("darken_center", params.darken_center as f64);
-        ctx.set_var("wrap", params.wrap as f64);
-        ctx.set_var("invert", params.invert as f64);
-        ctx.set_var("brighten", params.brighten as f64);
-        ctx.set_var("darken", params.darken as f64);
-        ctx.set_var("solarize", params.solarize as f64);
+        ctx.set_var("decay", params.decay() as f64);
+        ctx.set_var("gamma", params.gamma() as f64);
+        ctx.set_var("echo_zoom", params.echo_zoom() as f64);
+        ctx.set_var("echo_alpha", params.echo_alpha() as f64);
+        ctx.set_var("darken_center", if params.darken_center() { 1.0 } else { 0.0 });
+        ctx.set_var("wrap", if params.wrap() { 1.0 } else { 0.0 });
+        ctx.set_var("invert", if params.invert() { 1.0 } else { 0.0 });
+        ctx.set_var("brighten", if params.brighten() { 1.0 } else { 0.0 });
+        ctx.set_var("darken", if params.darken() { 1.0 } else { 0.0 });
+        ctx.set_var("solarize", if params.solarize() { 1.0 } else { 0.0 });
     }
     
     /// Update engine with audio data and render a frame.
@@ -151,15 +152,16 @@ impl MilkEngine {
             audio_levels.bass as f64,
             audio_levels.mid as f64,
             audio_levels.treb as f64,
-            audio_levels.bass_att as f64,
-            audio_levels.mid_att as f64,
-            audio_levels.treb_att as f64,
         );
+        ctx.set("bass_att", audio_levels.bass_att as f64);
+        ctx.set("mid_att", audio_levels.mid_att as f64);
+        ctx.set("treb_att", audio_levels.treb_att as f64);
         
         // Execute per-frame equations if enabled and preset loaded
         if self.config.enable_per_frame {
             if let Some(preset) = &self.current_preset {
-                self.execute_per_frame_equations(preset)?;
+                let equations = preset.per_frame_equations.clone();
+                self.evaluator.eval_per_frame(&equations)?;
             }
         }
         

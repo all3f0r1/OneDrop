@@ -6,16 +6,20 @@
 //! handling preset loading, audio analysis, equation evaluation, and rendering.
 
 pub mod audio;
+pub mod beat_detection;
 pub mod engine;
 pub mod error;
 pub mod fft;
+pub mod history;
 pub mod preset_manager;
 pub mod transition;
 
 pub use audio::AudioAnalyzer;
+pub use beat_detection::{BeatDetectionMode, BeatDetector, PresetChange};
 pub use engine::{EngineConfig, MilkEngine};
 pub use error::{EngineError, Result};
 pub use fft::FFTAnalyzer;
+pub use history::{ColorState, History, MashUpState, MashUpType};
 pub use preset_manager::{PresetManager, TransitionState};
 pub use transition::{Transition, TransitionManager, TransitionMode};
 

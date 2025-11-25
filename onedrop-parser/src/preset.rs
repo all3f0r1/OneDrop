@@ -27,10 +27,10 @@ pub struct MilkPreset {
     /// Initialization equations (executed once when preset loads)
     pub per_frame_init_equations: Vec<String>,
     
-    /// Custom waveforms (up to 4)
+    /// Custom waveforms (up to 16)
     pub waves: Vec<WaveCode>,
     
-    /// Custom shapes (up to 4)
+    /// Custom shapes (up to 16)
     pub shapes: Vec<ShapeCode>,
     
     /// Warp shader code (HLSL/GLSL)
@@ -134,6 +134,23 @@ pub struct PresetParameters {
     
     // Additional parameters stored as key-value pairs
     pub extra: HashMap<String, String>,
+}
+
+impl PresetParameters {
+    // Compatibility getters for engine (without prefixes)
+    pub fn zoomexp(&self) -> f32 { self.f_zoom_exponent }
+    pub fn decay(&self) -> f32 { self.f_decay }
+    pub fn gamma(&self) -> f32 { self.f_gamma_adj }
+    pub fn echo_zoom(&self) -> f32 { self.f_video_echo_zoom }
+    pub fn echo_alpha(&self) -> f32 { self.f_video_echo_alpha }
+    pub fn wave_mode(&self) -> i32 { self.n_wave_mode }
+    pub fn wave_a(&self) -> f32 { self.f_wave_alpha }
+    pub fn darken_center(&self) -> bool { self.b_darken_center }
+    pub fn wrap(&self) -> bool { self.b_tex_wrap }
+    pub fn invert(&self) -> bool { self.b_invert }
+    pub fn brighten(&self) -> bool { self.b_brighten }
+    pub fn darken(&self) -> bool { self.b_darken }
+    pub fn solarize(&self) -> bool { self.b_solarize }
 }
 
 /// Custom waveform definition.

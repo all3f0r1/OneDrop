@@ -8,11 +8,9 @@
 pub mod error;
 pub mod parser;
 pub mod preset;
-pub mod validator;
 
 pub use error::{ParseError, Result};
 pub use preset::MilkPreset;
-pub use validator::Validator;
 
 /// Parse a `.milk` preset file from a string.
 ///

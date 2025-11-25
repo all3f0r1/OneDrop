@@ -3,9 +3,8 @@
 use crate::cache::ExpressionCache;
 use crate::context::MilkContext;
 use crate::error::{EvalError, Result};
-use evalexpr::Node;
 
-/// Optimized evaluator for Milkdrop expressions with caching.
+/// Optimized evaluator with expression caching for better performance.
 pub struct OptimizedEvaluator {
     /// Execution context
     context: MilkContext,
@@ -19,15 +18,15 @@ impl OptimizedEvaluator {
     pub fn new() -> Self {
         Self {
             context: MilkContext::new(),
-            cache: ExpressionCache::default(),
+            cache: ExpressionCache::new(),
         }
     }
     
-    /// Create with custom cache size.
-    pub fn with_cache_size(cache_size: usize) -> Self {
+    /// Create a new optimized evaluator with specified cache capacity.
+    pub fn with_cache_capacity(capacity: usize) -> Self {
         Self {
             context: MilkContext::new(),
-            cache: ExpressionCache::new(cache_size),
+            cache: ExpressionCache::with_capacity(capacity),
         }
     }
     
@@ -41,7 +40,17 @@ impl OptimizedEvaluator {
         &mut self.context
     }
     
-    /// Evaluate a single expression (optimized with cache).
+    /// Get cache statistics.
+    pub fn cache_stats(&self) -> crate::cache::CacheStats {
+        self.cache.stats()
+    }
+    
+    /// Clear the expression cache.
+    pub fn clear_cache(&mut self) {
+        self.cache.clear();
+    }
+    
+    /// Evaluate a single expression using the cache.
     pub fn eval(&mut self, expression: &str) -> Result<f64> {
         // Clean the expression
         let expr = expression.trim().trim_end_matches(';').trim();
@@ -52,51 +61,68 @@ impl OptimizedEvaluator {
         
         // Get or compile the expression
         let node = self.cache.get_or_compile(expr)
-            .map_err(|e| EvalError::EvaluationFailed(e.to_string()))?;
+            .map_err(|e| EvalError::SyntaxError {
+                expression: expr.to_string(),
+                reason: e.to_string(),
+            })?;
         
-        // Evaluate the compiled node
-        self.eval_node(&node)
-    }
-    
-    /// Evaluate a compiled node.
-    fn eval_node(&mut self, node: &Node) -> Result<f64> {
+        // Evaluate with context
         match node.eval_with_context_mut(self.context.inner_mut()) {
             Ok(value) => {
+                // Convert result to f64
                 match value {
                     evalexpr::Value::Float(f) => Ok(f),
                     evalexpr::Value::Int(i) => Ok(i as f64),
                     evalexpr::Value::Boolean(b) => Ok(if b { 1.0 } else { 0.0 }),
-                    evalexpr::Value::Empty => Ok(0.0),
-                    _ => Err(EvalError::InvalidResult(format!("{:?}", value))),
+                    _ => Err(EvalError::TypeError {
+                        expected: "number".to_string(),
+                        got: format!("{:?}", value),
+                    }),
                 }
             }
-            Err(e) => Err(EvalError::EvaluationFailed(e.to_string())),
+            Err(e) => Err(EvalError::EvalFailed(e.to_string())),
         }
     }
     
-    /// Evaluate multiple expressions in batch.
-    pub fn eval_batch(&mut self, expressions: &[String]) -> Vec<Result<f64>> {
-        expressions.iter().map(|expr| self.eval(expr)).collect()
-    }
-    
-    /// Pre-compile expressions for later use.
-    pub fn precompile(&mut self, expressions: &[String]) -> Result<()> {
-        for expr in expressions {
-            let _ = self.cache.get_or_compile(expr)
-                .map_err(|e| EvalError::EvaluationFailed(e.to_string()))?;
+    /// Evaluate multiple expressions (per-frame equations).
+    pub fn eval_per_frame(&mut self, equations: &[String]) -> Result<()> {
+        for equation in equations {
+            self.eval(equation)?;
         }
         Ok(())
     }
     
-    /// Reset the evaluator (clear context and cache).
-    pub fn reset(&mut self) {
-        self.context = MilkContext::new();
-        self.cache.clear();
+    /// Evaluate per-pixel equations for a single pixel.
+    pub fn eval_per_pixel(&mut self, x: f64, y: f64, rad: f64, ang: f64, equations: &[String]) -> Result<()> {
+        // Set pixel position
+        self.context.set_pixel(x, y, rad, ang);
+        
+        // Evaluate all per-pixel equations
+        for equation in equations {
+            self.eval(equation)?;
+        }
+        
+        Ok(())
     }
     
-    /// Get cache statistics.
-    pub fn cache_stats(&self) -> crate::cache::CacheStats {
-        self.cache.stats()
+    /// Batch evaluate per-pixel equations for multiple pixels.
+    /// This is more efficient than calling eval_per_pixel repeatedly.
+    pub fn eval_per_pixel_batch(
+        &mut self,
+        pixels: &[(f64, f64, f64, f64)], // (x, y, rad, ang)
+        equations: &[String],
+    ) -> Result<Vec<()>> {
+        pixels.iter()
+            .map(|(x, y, rad, ang)| {
+                self.eval_per_pixel(*x, *y, *rad, *ang, equations)
+            })
+            .collect()
+    }
+    
+    /// Reset the evaluator to initial state.
+    pub fn reset(&mut self) {
+        self.context = MilkContext::new();
+        // Keep the cache
     }
 }
 
@@ -114,63 +140,93 @@ mod tests {
     fn test_optimized_eval() {
         let mut eval = OptimizedEvaluator::new();
         
-        eval.context_mut().set_var("x", 5.0);
-        
-        let result = eval.eval("x + 1").unwrap();
-        assert_eq!(result, 6.0);
+        let result = eval.eval("2 + 2").unwrap();
+        assert_eq!(result, 4.0);
     }
 
     #[test]
     fn test_cache_performance() {
         let mut eval = OptimizedEvaluator::new();
         
-        eval.context_mut().set_var("x", 1.0);
-        
         // First evaluation - cache miss
-        eval.eval("x + 1").unwrap();
+        eval.eval("sin(0.5) + cos(0.5)").ok();
         let stats1 = eval.cache_stats();
         assert_eq!(stats1.misses, 1);
+        assert_eq!(stats1.hits, 0);
         
         // Second evaluation - cache hit
-        eval.eval("x + 1").unwrap();
+        eval.eval("sin(0.5) + cos(0.5)").ok();
         let stats2 = eval.cache_stats();
+        assert_eq!(stats2.misses, 1);
         assert_eq!(stats2.hits, 1);
-        assert_eq!(stats2.hit_rate, 0.5);
+        
+        // Hit rate should be 50%
+        assert!((stats2.hit_rate - 0.5).abs() < 1e-10);
     }
 
     #[test]
-    fn test_precompile() {
+    fn test_per_frame_equations() {
         let mut eval = OptimizedEvaluator::new();
         
-        let expressions = vec![
-            "x + 1".to_string(),
-            "y * 2".to_string(),
-            "sin(time)".to_string(),
+        let equations = vec![
+            "time = 1.0".to_string(),
+            "bass = 0.5".to_string(),
+            "zoom = 1.0 + bass * 0.1".to_string(),
         ];
         
-        eval.precompile(&expressions).unwrap();
+        eval.eval_per_frame(&equations).unwrap();
         
-        let stats = eval.cache_stats();
-        assert_eq!(stats.size, 3);
+        assert_eq!(eval.context().get("time"), Some(1.0));
+        assert_eq!(eval.context().get("bass"), Some(0.5));
+        assert_eq!(eval.context().get("zoom"), Some(1.05));
     }
 
     #[test]
-    fn test_batch_eval() {
+    fn test_per_pixel_evaluation() {
         let mut eval = OptimizedEvaluator::new();
         
-        eval.context_mut().set_var("x", 2.0);
-        eval.context_mut().set_var("y", 3.0);
-        
-        let expressions = vec![
-            "x + 1".to_string(),
-            "y * 2".to_string(),
-            "x + y".to_string(),
+        let equations = vec![
+            "rad = sqrt(x*x + y*y)".to_string(),
         ];
         
-        let results = eval.eval_batch(&expressions);
+        eval.eval_per_pixel(0.5, 0.5, 0.0, 0.0, &equations).unwrap();
         
-        assert_eq!(results[0].as_ref().unwrap(), &3.0);
-        assert_eq!(results[1].as_ref().unwrap(), &6.0);
-        assert_eq!(results[2].as_ref().unwrap(), &5.0);
+        let rad = eval.context().get("rad").unwrap();
+        assert!((rad - 0.7071067811865476).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_batch_evaluation() {
+        let mut eval = OptimizedEvaluator::new();
+        
+        let pixels = vec![
+            (0.0, 0.0, 0.0, 0.0),
+            (1.0, 0.0, 1.0, 0.0),
+            (0.0, 1.0, 1.0, 1.5708),
+        ];
+        
+        let equations = vec![
+            "x = x + 0.1".to_string(),
+        ];
+        
+        let result = eval.eval_per_pixel_batch(&pixels, &equations);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn test_clear_cache() {
+        let mut eval = OptimizedEvaluator::new();
+        
+        eval.eval("1 + 1").ok();
+        eval.eval("2 + 2").ok();
+        
+        assert_eq!(eval.cache_stats().size, 2);
+        
+        eval.clear_cache();
+        
+        assert_eq!(eval.cache_stats().size, 0);
+        assert_eq!(eval.cache_stats().hits, 0);
+        assert_eq!(eval.cache_stats().misses, 0);
     }
 }

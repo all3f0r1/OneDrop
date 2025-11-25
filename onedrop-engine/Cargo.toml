@@ -19,6 +19,9 @@ anyhow = "1.0"
 # Async runtime
 pollster = "0.3"
 
+# Graphics
+wgpu = "22.1"
+
 # Logging
 log = "0.4"
 

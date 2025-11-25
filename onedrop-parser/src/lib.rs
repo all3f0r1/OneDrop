@@ -5,10 +5,12 @@
 //! This crate provides functionality to parse Milkdrop visualization presets
 //! into structured Rust data types that can be used for rendering or analysis.
 
+pub mod double_preset;
 pub mod error;
 pub mod parser;
 pub mod preset;
 
+pub use double_preset::{BlendPattern, DoublePreset, parse_double_preset};
 pub use error::{ParseError, Result};
 pub use preset::MilkPreset;
 

@@ -5,6 +5,30 @@ All notable changes to OneDrop will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-11-25
+
+### Added
+- **Double-preset format (.od2)** - Blend two presets simultaneously
+- **27 blending patterns** inspired by MilkDrop3:
+  - Basic blends: Alpha, Additive, Multiply, Screen, Overlay
+  - Advanced blends: Darken, Lighten, Color Dodge, Color Burn, Hard Light, Soft Light
+  - Difference blends: Difference, Exclusion
+  - Pattern blends: Plasma, Snail, Triangle, Donuts, Checkerboard
+  - Stripe blends: Horizontal, Vertical, Diagonal
+  - Geometric blends: Radial, Angular
+  - Noise blends: Perlin Noise, Voronoi
+  - Dynamic blends: Wave, Random Pixel
+- `BlendRenderer` module in onedrop-renderer
+- `double_preset` module in onedrop-parser
+- `BlendPattern` enum with 27 variants
+- `DoublePreset` structure for .od2 files
+- WGSL blend shader with all 27 patterns
+- Animation support for blend transitions
+
+### Changed
+- Enhanced renderer capabilities for dual-preset rendering
+- Added bytemuck dependency for uniform buffer management
+
 ## [0.3.0] - 2025-11-25
 
 ### Added

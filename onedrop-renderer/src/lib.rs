@@ -5,12 +5,14 @@
 //! This crate provides a complete rendering engine for Milkdrop presets,
 //! including waveform rendering, motion effects, and shader-based transformations.
 
+pub mod blend_renderer;
 pub mod config;
 pub mod error;
 pub mod gpu_context;
 pub mod renderer;
 pub mod waveform;
 
+pub use blend_renderer::BlendRenderer;
 pub use config::{AudioLevels, MotionParams, RenderConfig, RenderState, WaveParams};
 pub use error::{RenderError, Result};
 pub use renderer::MilkRenderer;

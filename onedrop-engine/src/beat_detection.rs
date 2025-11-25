@@ -247,7 +247,7 @@ mod tests {
     fn test_beat_detector_off() {
         let mut detector = BeatDetector::new();
         
-        assert_eq!(detector.mode(), BeatDetectionMode::Off);
+        assert_eq!(*detector.mode(), BeatDetectionMode::Off);
         assert!(!detector.is_enabled());
         
         let change = detector.should_change_preset(2.0, 1.0, 3.0);
@@ -336,27 +336,27 @@ mod tests {
     fn test_mode_cycling() {
         let mut detector = BeatDetector::new();
         
-        assert_eq!(detector.mode(), BeatDetectionMode::Off);
+        assert_eq!(*detector.mode(), BeatDetectionMode::Off);
         
         detector.next_mode();
-        assert_eq!(detector.mode(), BeatDetectionMode::HardCut1);
+        assert_eq!(*detector.mode(), BeatDetectionMode::HardCut1);
         
         detector.next_mode();
-        assert_eq!(detector.mode(), BeatDetectionMode::HardCut2);
+        assert_eq!(*detector.mode(), BeatDetectionMode::HardCut2);
         
         detector.next_mode();
-        assert_eq!(detector.mode(), BeatDetectionMode::HardCut3);
+        assert_eq!(*detector.mode(), BeatDetectionMode::HardCut3);
         
         detector.next_mode();
-        assert_eq!(detector.mode(), BeatDetectionMode::HardCut4);
+        assert_eq!(*detector.mode(), BeatDetectionMode::HardCut4);
         
         detector.next_mode();
-        assert_eq!(detector.mode(), BeatDetectionMode::HardCut5);
+        assert_eq!(*detector.mode(), BeatDetectionMode::HardCut5);
         
         detector.next_mode();
         assert!(matches!(detector.mode(), BeatDetectionMode::HardCut6 { .. }));
         
         detector.next_mode();
-        assert_eq!(detector.mode(), BeatDetectionMode::Off);
+        assert_eq!(*detector.mode(), BeatDetectionMode::Off);
     }
 }

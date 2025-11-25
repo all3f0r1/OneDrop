@@ -291,16 +291,35 @@ pub fn parse_double_preset(content: &str) -> Result<DoublePreset> {
     let mut current_section = "";
     
     for line in content.lines() {
-        let line = line.trim();
+        let trimmed = line.trim();
         
-        if line.starts_with('[') && line.ends_with(']') {
-            current_section = &line[1..line.len()-1];
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            let section = &trimmed[1..trimmed.len()-1];
+            
+            // Handle top-level sections
+            if section == "DoublePreset" || section == "PresetA" || section == "PresetB" {
+                current_section = section;
+                continue;
+            }
+            
+            // For preset internal sections like [preset00], add to current preset content
+            match current_section {
+                "PresetA" => {
+                    preset_a_content.push_str(line);
+                    preset_a_content.push('\n');
+                }
+                "PresetB" => {
+                    preset_b_content.push_str(line);
+                    preset_b_content.push('\n');
+                }
+                _ => {}
+            }
             continue;
         }
         
         match current_section {
             "DoublePreset" => {
-                if let Some((key, value)) = line.split_once('=') {
+                if let Some((key, value)) = trimmed.split_once('=') {
                     match key.trim() {
                         "BlendPattern" => {
                             if let Ok(index) = value.trim().parse::<usize>() {

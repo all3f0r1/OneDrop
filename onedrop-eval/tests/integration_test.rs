@@ -1,4 +1,4 @@
-use onedrop_eval::{MilkEvaluator, eval_simple};
+use onedrop_eval::MilkEvaluator;
 use approx::assert_relative_eq;
 
 #[test]
@@ -10,7 +10,7 @@ fn test_real_world_per_frame_equations() {
     eval.context_mut().set_frame(60.0);
     
     // Simulate audio data
-    eval.context_mut().set_audio(0.5, 0.3, 0.7, 0.4, 0.2, 0.6);
+    eval.context_mut().set_audio(0.5, 0.3, 0.7);
     
     // Real equations from preset "10.milk"
     let equations = vec![
@@ -39,7 +39,7 @@ fn test_real_world_per_pixel_equations() {
     
     // Initialize context
     eval.context_mut().set_time(1.0);
-    eval.context_mut().set_audio(0.8, 0.5, 0.9, 0.7, 0.4, 0.8);
+    eval.context_mut().set_audio(0.8, 0.5, 0.9);
     eval.context_mut().set_var("zoom", 1.0);
     
     // Real equations from preset "10.milk"
@@ -168,7 +168,7 @@ fn test_audio_reactive_equations() {
     let mut eval = MilkEvaluator::new();
     
     // Simulate beat
-    eval.context_mut().set_audio(1.0, 0.5, 0.3, 0.8, 0.4, 0.2);
+    eval.context_mut().set_audio(1.0, 0.5, 0.3);
     
     // Audio-reactive zoom
     eval.eval("zoom = 1.0 + 0.2 * bass").unwrap();

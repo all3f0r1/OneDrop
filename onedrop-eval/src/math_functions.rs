@@ -190,7 +190,7 @@ pub fn register_math_functions(context: &mut HashMapContext<DefaultNumericTypes>
                 if let (Ok(a), Ok(b)) = (tuple[0].as_number(), tuple[1].as_number()) {
                     let a: f64 = a;
                     let b: f64 = b;
-                    return Ok(Value::Boolean(a > b));
+                    return Ok(Value::Float(if a > b { 1.0 } else { 0.0 }));
                 }
             }
         }
@@ -206,7 +206,7 @@ pub fn register_math_functions(context: &mut HashMapContext<DefaultNumericTypes>
                 if let (Ok(a), Ok(b)) = (tuple[0].as_number(), tuple[1].as_number()) {
                     let a: f64 = a;
                     let b: f64 = b;
-                    return Ok(Value::Boolean(a < b));
+                    return Ok(Value::Float(if a < b { 1.0 } else { 0.0 }));
                 }
             }
         }
@@ -222,7 +222,7 @@ pub fn register_math_functions(context: &mut HashMapContext<DefaultNumericTypes>
                 if let (Ok(a), Ok(b)) = (tuple[0].as_number(), tuple[1].as_number()) {
                     let a: f64 = a;
                     let b: f64 = b;
-                    return Ok(Value::Boolean((a - b).abs() < 1e-10));
+                    return Ok(Value::Float(if (a - b).abs() < 1e-10 { 1.0 } else { 0.0 }));
                 }
             }
         }
@@ -273,6 +273,41 @@ pub fn register_math_functions(context: &mut HashMapContext<DefaultNumericTypes>
     context.set_function("int".into(), Function::new(|arg| {
         arg.as_number().map(|n: f64| Value::Float(n.trunc()))
     })).ok();
+    
+    // MilkDrop-style if function (accepts Float condition)
+    context.set_function("milkif".into(), Function::new(|arg| {
+        if let Ok(tuple) = arg.as_tuple() {
+            if tuple.len() == 3 {
+                // Get condition (Float or Boolean)
+                let condition = match &tuple[0] {
+                    Value::Float(f) => *f != 0.0,
+                    Value::Int(i) => *i != 0,
+                    Value::Boolean(b) => *b,
+                    _ => return Err(evalexpr::EvalexprError::TypeError {
+                        expected: vec![evalexpr::ValueType::Float, evalexpr::ValueType::Boolean],
+                        actual: tuple[0].clone(),
+                    }),
+                };
+                
+                // Return true_val or false_val, converting Int to Float if needed
+                let result = if condition { &tuple[1] } else { &tuple[2] };
+                match result {
+                    Value::Int(i) => Ok(Value::Float(*i as f64)),
+                    other => Ok(other.clone()),
+                }
+            } else {
+                Err(evalexpr::EvalexprError::WrongFunctionArgumentAmount {
+                    expected: 3..=3,
+                    actual: tuple.len(),
+                })
+            }
+        } else {
+            Err(evalexpr::EvalexprError::WrongFunctionArgumentAmount {
+                expected: 3..=3,
+                actual: 1,
+            })
+        }
+    })).ok();
 }
 
 /// List of all registered math functions.
@@ -298,6 +333,8 @@ pub fn list_math_functions() -> Vec<&'static str> {
         "bnot", "band", "bor",
         // Type conversion
         "int",
+        // Control flow
+        "milkif",
     ]
 }
 

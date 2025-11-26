@@ -285,11 +285,13 @@ mod tests {
     #[test]
     fn test_render_texture() {
         let config = RenderConfig::default();
+        let width = config.width;
+        let height = config.height;
         let renderer = pollster::block_on(MilkRenderer::new(config)).unwrap();
         
         let texture = renderer.render_texture();
-        assert_eq!(texture.width(), config.width);
-        assert_eq!(texture.height(), config.height);
+        assert_eq!(texture.width(), width);
+        assert_eq!(texture.height(), height);
     }
     
     #[test]

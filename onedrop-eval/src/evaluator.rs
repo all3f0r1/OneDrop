@@ -61,8 +61,14 @@ impl MilkEvaluator {
         // e.g., "zoom = 1" -> "zoom = 1.0"
         let assignment_regex = Regex::new(r"(\w+)\s*=\s*(-?\d+)([^\d\.]|$)")
             .unwrap();
-        let result = assignment_regex.replace_all(expr, "$1 = $2.0$3");        
-        result.to_string()
+        let mut result = assignment_regex.replace_all(expr, "$1 = $2.0$3").to_string();
+        
+        // Replace if( or if ( with milkif( to use our custom if function
+        // This allows Float conditions (0.0 = false, non-zero = true)
+        let if_regex = Regex::new(r"\bif\s*\(").unwrap();
+        result = if_regex.replace_all(&result, "milkif(").to_string();
+        
+        result
     }
     
     /// Evaluate a single expression.

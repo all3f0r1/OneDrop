@@ -64,8 +64,11 @@ impl ShaderGenerator {
     frame: f32,
     fps: f32,
     
-    // Custom variables
-    q: array<f32, 64>,
+    // Padding for alignment
+    _padding: f32,
+    
+    // Custom variables (vec4 for proper alignment)
+    q: array<vec4<f32>, 16>,  // 64 floats as 16 vec4s
 }
 
 "#.to_string()

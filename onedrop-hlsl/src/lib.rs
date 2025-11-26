@@ -2,8 +2,12 @@
 //!
 //! Simplified HLSL to WGSL translator for Milkdrop shaders.
 
+pub mod advanced;
+
 use regex::Regex;
 use thiserror::Error;
+
+pub use advanced::AdvancedTranslator;
 
 #[derive(Error, Debug)]
 pub enum TranslationError {

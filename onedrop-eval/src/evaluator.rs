@@ -1,8 +1,9 @@
-//! Expression evaluator for Milkdrop equations.
+//! Evaluator for Milkdrop expressions.
 
 use crate::context::MilkContext;
 use crate::error::{EvalError, Result};
 use evalexpr::{eval_with_context_mut, Node};
+use regex::Regex;
 
 /// Evaluator for Milkdrop expressions.
 pub struct MilkEvaluator {
@@ -32,6 +33,38 @@ impl MilkEvaluator {
         &mut self.context
     }
     
+    /// Pre-process expression to handle auto-initialization and type conversion.
+    fn preprocess_expression(&mut self, expression: &str) -> String {
+        let expr = expression.trim();
+        
+        // Extract variable names from the expression
+        let var_regex = regex::Regex::new(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\b").unwrap();
+        for cap in var_regex.captures_iter(expr) {
+            let var_name = &cap[1];
+            
+            // Skip function names and keywords
+            if matches!(var_name, "sin" | "cos" | "tan" | "sqrt" | "abs" | "pow" | "exp" | "log" | "ln" | 
+                                   "if" | "min" | "max" | "floor" | "ceil" | "round" | "rand" | "above" | 
+                                   "below" | "equal" | "bnot" | "band" | "bor" | "int" | "fmod" | "clamp" |
+                                   "sinh" | "cosh" | "tanh" | "asin" | "acos" | "atan" | "atan2" | 
+                                   "sqr" | "rad" | "deg" | "fract" | "trunc" | "sign") {
+                continue;
+            }
+            
+            // Auto-initialize undefined variables to 0
+            if self.context.get(var_name).is_none() {
+                self.context.set(var_name, 0.0);
+            }
+        }
+        
+        // Convert integer literals to floats in assignments
+        // e.g., "zoom = 1" -> "zoom = 1.0"
+        let assignment_regex = Regex::new(r"(\w+)\s*=\s*(-?\d+)([^\d\.]|$)")
+            .unwrap();
+        let result = assignment_regex.replace_all(expr, "$1 = $2.0$3");        
+        result.to_string()
+    }
+    
     /// Evaluate a single expression.
     pub fn eval(&mut self, expression: &str) -> Result<f64> {
         // Clean the expression (remove trailing semicolon, trim whitespace)
@@ -41,8 +74,11 @@ impl MilkEvaluator {
             return Ok(0.0);
         }
         
+        // Pre-process to handle auto-initialization and type conversion
+        let processed_expr = self.preprocess_expression(expr);
+        
         // Evaluate with context
-        match eval_with_context_mut(expr, self.context.inner_mut()) {
+        match eval_with_context_mut(&processed_expr, self.context.inner_mut()) {
             Ok(value) => {
                 // Convert result to f64
                 match value {

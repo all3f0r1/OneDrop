@@ -11,12 +11,14 @@ pub mod error;
 pub mod gpu_context;
 pub mod renderer;
 pub mod waveform;
+pub mod per_pixel_pipeline;
 
 pub use blend_renderer::BlendRenderer;
 pub use config::{AudioLevels, MotionParams, RenderConfig, RenderState, WaveParams};
 pub use error::{RenderError, Result};
 pub use renderer::MilkRenderer;
 pub use waveform::{WaveformMode, WaveformRenderer, WavePoint};
+pub use per_pixel_pipeline::{PerPixelPipeline, PixelVarsUniform};
 
 #[cfg(test)]
 mod tests {

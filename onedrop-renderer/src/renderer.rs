@@ -281,4 +281,29 @@ mod tests {
         let result = renderer.render();
         assert!(result.is_ok());
     }
+    
+    #[test]
+    fn test_render_texture() {
+        let config = RenderConfig::default();
+        let renderer = pollster::block_on(MilkRenderer::new(config)).unwrap();
+        
+        let texture = renderer.render_texture();
+        assert_eq!(texture.width(), config.width);
+        assert_eq!(texture.height(), config.height);
+    }
+    
+    #[test]
+    fn test_multiple_renders() {
+        let config = RenderConfig::default();
+        let mut renderer = pollster::block_on(MilkRenderer::new(config)).unwrap();
+        
+        // Render multiple frames
+        for _ in 0..10 {
+            let result = renderer.render();
+            assert!(result.is_ok());
+        }
+        
+        // Verify state progressed
+        assert_eq!(renderer.state().frame, 10);
+    }
 }

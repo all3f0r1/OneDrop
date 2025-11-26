@@ -6,6 +6,8 @@
 //! handling preset loading, audio analysis, equation evaluation, and rendering.
 
 pub mod audio;
+#[cfg(feature = "audio-input")]
+pub mod audio_input;
 pub mod beat_detection;
 pub mod engine;
 pub mod error;
@@ -15,6 +17,8 @@ pub mod preset_manager;
 pub mod transition;
 
 pub use audio::AudioAnalyzer;
+#[cfg(feature = "audio-input")]
+pub use audio_input::{AudioAnalysisInput, AudioInput, AudioInputError};
 pub use beat_detection::{BeatDetectionMode, BeatDetector, PresetChange};
 pub use engine::{EngineConfig, MilkEngine};
 pub use error::{EngineError, Result};

@@ -17,6 +17,7 @@ pub mod per_vertex_pipeline;
 pub use blend_renderer::BlendRenderer;
 pub use config::{AudioLevels, MotionParams, RenderConfig, RenderState, WaveParams};
 pub use error::{RenderError, Result};
+pub use gpu_context::GpuContext;
 pub use per_vertex_pipeline::{PerVertexPipeline, VertexVarsUniform};
 pub use renderer::MilkRenderer;
 pub use waveform::{WaveformMode, WaveformRenderer, WavePoint};

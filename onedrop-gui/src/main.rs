@@ -16,8 +16,8 @@ struct App {
     window: Option<Arc<Window>>,
     surface: Option<wgpu::Surface<'static>>,
     surface_config: Option<wgpu::SurfaceConfiguration>,
-    device: Option<wgpu::Device>,
-    queue: Option<wgpu::Queue>,
+    device: Option<Arc<wgpu::Device>>,
+    queue: Option<Arc<wgpu::Queue>>,
     engine: Option<MilkEngine>,
     preset_manager: PresetManager,
     last_frame: Instant,
@@ -82,6 +82,9 @@ impl App {
             None,
         ))?;
         
+        let device = Arc::new(device);
+        let queue = Arc::new(queue);
+        
         // Configure surface
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
@@ -104,7 +107,7 @@ impl App {
         
         surface.configure(&device, &config);
         
-        // Create engine
+        // Create engine with shared device
         let engine_config = EngineConfig {
             render_config: RenderConfig {
                 width: size.width,
@@ -114,7 +117,8 @@ impl App {
             ..Default::default()
         };
         
-        let engine = pollster::block_on(MilkEngine::new(engine_config))?;
+        // Share device and queue with engine
+        let engine = MilkEngine::from_device(Arc::clone(&device), Arc::clone(&queue), engine_config)?;
         
         self.window = Some(window);
         self.surface = Some(surface);
@@ -192,28 +196,27 @@ impl App {
             label: Some("Render Encoder"),
         });
         
-        // Simple render pass (just clear for now)
-        {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-        }
+        // Copy MilkEngine texture to surface
+        let render_texture = engine.renderer().render_texture();
+        encoder.copy_texture_to_texture(
+            wgpu::ImageCopyTexture {
+                texture: render_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::ImageCopyTexture {
+                texture: &output.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::Extent3d {
+                width: self.surface_config.as_ref().unwrap().width,
+                height: self.surface_config.as_ref().unwrap().height,
+                depth_or_array_layers: 1,
+            },
+        );
         
         queue.submit(std::iter::once(encoder.finish()));
         output.present();

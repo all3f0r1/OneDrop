@@ -2,15 +2,16 @@
 
 use crate::config::RenderConfig;
 use crate::error::{RenderError, Result};
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 /// GPU context containing device, queue, and resources.
 pub struct GpuContext {
     /// WGPU device
-    pub device: wgpu::Device,
+    pub device: Arc<wgpu::Device>,
     
     /// Command queue
-    pub queue: wgpu::Queue,
+    pub queue: Arc<wgpu::Queue>,
     
     /// Render configuration
     pub config: RenderConfig,
@@ -60,6 +61,9 @@ impl GpuContext {
             )
             .await?;
         
+        let device = Arc::new(device);
+        let queue = Arc::new(queue);
+        
         // Create render textures
         let render_texture = Self::create_texture(&device, &config, "Render Texture");
         let render_texture_view = render_texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -76,6 +80,27 @@ impl GpuContext {
             prev_texture,
             prev_texture_view,
         })
+    }
+    
+    /// Create a GPU context from an existing device and queue.
+    /// This is useful when sharing a GPU context between multiple components.
+    pub fn from_device(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, config: RenderConfig) -> Self {
+        // Create render textures
+        let render_texture = Self::create_texture(&device, &config, "Render Texture");
+        let render_texture_view = render_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        
+        let prev_texture = Self::create_texture(&device, &config, "Previous Frame Texture");
+        let prev_texture_view = prev_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        
+        Self {
+            device,
+            queue,
+            config,
+            render_texture,
+            render_texture_view,
+            prev_texture,
+            prev_texture_view,
+        }
     }
     
     /// Create a texture with the given configuration.

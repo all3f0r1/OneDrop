@@ -31,6 +31,12 @@ impl MilkRenderer {
     /// Create a new renderer.
     pub async fn new(config: RenderConfig) -> Result<Self> {
         let gpu = GpuContext::new(config).await?;
+        Self::from_gpu_context(gpu)
+    }
+    
+    /// Create a renderer from an existing GPU context.
+    /// This is useful when sharing a GPU context between multiple components.
+    pub fn from_gpu_context(gpu: GpuContext) -> Result<Self> {
         
         // Create sampler
         let sampler = gpu.device.create_sampler(&wgpu::SamplerDescriptor {

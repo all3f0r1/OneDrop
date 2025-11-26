@@ -1,11 +1,13 @@
 //! Main Milkdrop engine implementation.
 
 use crate::audio::AudioAnalyzer;
-use crate::beat_detection::{BeatDetector, BeatDetectionMode, PresetChange};
+use crate::beat_detection::{BeatDetectionMode, BeatDetector, PresetChange};
 use crate::error::{EngineError, Result};
+use onedrop_renderer::GpuContext;
 use onedrop_eval::MilkEvaluator;
 use onedrop_parser::{parse_preset, MilkPreset};
 use onedrop_renderer::{MilkRenderer, MotionParams, RenderConfig, RenderState, WaveParams};
+use std::sync::Arc;
 use wgpu;
 use std::fs;
 use std::path::Path;
@@ -65,6 +67,23 @@ impl MilkEngine {
     /// Create a new engine.
     pub async fn new(config: EngineConfig) -> Result<Self> {
         let renderer = MilkRenderer::new(config.render_config.clone()).await?;
+        Self::from_renderer(renderer, config)
+    }
+    
+    /// Create an engine from an existing device and queue.
+    /// This is useful when sharing a GPU context with a GUI.
+    pub fn from_device(
+        device: Arc<wgpu::Device>,
+        queue: Arc<wgpu::Queue>,
+        config: EngineConfig,
+    ) -> Result<Self> {
+        let gpu = GpuContext::from_device(device, queue, config.render_config.clone());
+        let renderer = MilkRenderer::from_gpu_context(gpu)?;
+        Self::from_renderer(renderer, config)
+    }
+    
+    /// Create an engine from an existing renderer.
+    fn from_renderer(renderer: MilkRenderer, config: EngineConfig) -> Result<Self> {
         let evaluator = MilkEvaluator::new();
         let audio_analyzer = AudioAnalyzer::new(config.sample_rate);
         
@@ -303,6 +322,16 @@ impl MilkEngine {
     /// Disable beat detection.
     pub fn disable_beat_detection(&mut self) {
         self.beat_detector.disable();
+    }
+    
+    /// Get a reference to the renderer.
+    pub fn renderer(&self) -> &MilkRenderer {
+        &self.renderer
+    }
+    
+    /// Get a mutable reference to the renderer.
+    pub fn renderer_mut(&mut self) -> &mut MilkRenderer {
+        &mut self.renderer
     }
     
     /// Reset engine state.

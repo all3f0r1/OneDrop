@@ -127,13 +127,13 @@ impl MilkRenderer {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &composite_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &composite_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: gpu.config.texture_format.to_wgpu(),
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),

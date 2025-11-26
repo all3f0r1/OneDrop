@@ -10,12 +10,14 @@ pub mod context;
 pub mod error;
 pub mod evaluator;
 pub mod evaluator_optimized;
+pub mod math_functions;
 
 pub use cache::{CacheStats, ExpressionCache};
 pub use context::MilkContext;
 pub use error::{EvalError, Result};
 pub use evaluator::MilkEvaluator;
 pub use evaluator_optimized::OptimizedEvaluator;
+pub use math_functions::{register_math_functions, list_math_functions};
 
 /// Evaluate a simple expression with default context.
 ///
@@ -37,14 +39,12 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_eval_simple() {
         let result = eval_simple("10 * 5").unwrap();
         assert_eq!(result, 50.0);
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_eval_with_math() {
         let result = eval_simple("sin(0) + cos(0)").unwrap();
         assert!((result - 1.0).abs() < 1e-10);

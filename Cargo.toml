@@ -8,6 +8,7 @@ members = [
     "onedrop-engine",
     "onedrop-cli",
     "onedrop-gui",
+    "tools",
 ]
 
 [workspace.package]

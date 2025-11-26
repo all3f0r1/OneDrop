@@ -1,0 +1,12 @@
+[package]
+name = "onedrop-tools"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "test_preset_compatibility"
+path = "src/main.rs"
+
+[dependencies]
+onedrop-parser = { path = "../onedrop-parser" }
+onedrop-eval = { path = "../onedrop-eval" }

@@ -24,6 +24,9 @@ impl MilkContext {
         // Initialize default values for all Milkdrop variables
         Self::init_defaults(&mut context);
         
+        // Register all math functions
+        crate::math_functions::register_math_functions(&mut context);
+        
         Self {
             context,
             q_vars: [0.0; 64],

@@ -8,7 +8,7 @@ description = "GPU rendering pipeline for Milkdrop visualizations using wgpu"
 
 [dependencies]
 # GPU rendering
-wgpu = "22.1"
+wgpu = "23.0"
 bytemuck = { version = "1.14", features = ["derive"] }
 
 # Math

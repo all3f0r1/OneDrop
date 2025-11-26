@@ -18,7 +18,7 @@ onedrop-renderer = { path = "../onedrop-renderer" }
 
 # Window and events
 winit = "0.30"
-wgpu = "22.1"
+wgpu = "23.0"
 
 # Logging
 env_logger = "0.11"

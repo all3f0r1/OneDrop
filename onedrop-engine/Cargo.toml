@@ -20,7 +20,7 @@ anyhow = "1.0"
 pollster = "0.3"
 
 # Graphics
-wgpu = "22.1"
+wgpu = "23.0"
 
 # Logging
 log = "0.4"

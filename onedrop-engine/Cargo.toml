@@ -44,3 +44,8 @@ path = "examples/basic.rs"
 [[example]]
 name = "audio_reactive"
 path = "examples/audio_reactive.rs"
+
+[[bench]]
+name = "performance"
+path = "benches/performance.rs"
+harness = false

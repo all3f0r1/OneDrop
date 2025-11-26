@@ -81,9 +81,34 @@ impl MilkEngine {
     
     /// Load a preset from file.
     pub fn load_preset<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
-        let content = fs::read_to_string(path)?;
-        let preset = parse_preset(&content)?;
+        let path_ref = path.as_ref();
+        log::info!("Loading preset: {}", path_ref.display());
         
+        // Read file
+        let content = fs::read_to_string(path_ref).map_err(|e| {
+            log::error!("Failed to read preset file {}: {}", path_ref.display(), e);
+            EngineError::PresetLoadFailed(format!("Cannot read file: {}", e))
+        })?;
+        
+        // Parse preset
+        let preset = parse_preset(&content).map_err(|e| {
+            log::error!("Failed to parse preset {}: {}", path_ref.display(), e);
+            e
+        })?;
+        
+        // Validate preset
+        if preset.per_frame_equations.is_empty() && preset.per_pixel_equations.is_empty() {
+            log::warn!("Preset {} has no equations, using default parameters", path_ref.display());
+        }
+        
+        self.load_preset_from_data(preset)
+    }
+    
+    /// Load the default preset.
+    /// This is useful as a fallback when no preset is available or loading fails.
+    pub fn load_default_preset(&mut self) -> Result<()> {
+        log::info!("Loading default preset");
+        let preset = crate::default_preset::default_preset();
         self.load_preset_from_data(preset)
     }
     
@@ -174,7 +199,12 @@ impl MilkEngine {
         if self.config.enable_per_frame {
             if let Some(preset) = &self.current_preset {
                 let equations = preset.per_frame_equations.clone();
-                self.evaluator.eval_per_frame(&equations)?;
+                
+                // Try to evaluate equations, but don't fail the entire frame if one fails
+                if let Err(e) = self.evaluator.eval_per_frame(&equations) {
+                    log::warn!("Per-frame equation evaluation failed: {}. Continuing with previous state.", e);
+                    // Continue rendering with previous state instead of failing
+                }
             }
         }
         

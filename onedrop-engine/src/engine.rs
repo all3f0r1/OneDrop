@@ -1,6 +1,7 @@
 //! Main Milkdrop engine implementation.
 
 use crate::audio::AudioAnalyzer;
+use crate::beat_detection::{BeatDetector, BeatDetectionMode, PresetChange};
 use crate::error::{EngineError, Result};
 use onedrop_eval::MilkEvaluator;
 use onedrop_parser::{parse_preset, MilkPreset};
@@ -19,6 +20,9 @@ pub struct MilkEngine {
     
     /// Audio analyzer
     audio_analyzer: AudioAnalyzer,
+    
+    /// Beat detector for automatic preset changes
+    beat_detector: BeatDetector,
     
     /// Current preset
     current_preset: Option<MilkPreset>,
@@ -68,6 +72,7 @@ impl MilkEngine {
             renderer,
             evaluator,
             audio_analyzer,
+            beat_detector: BeatDetector::new(),
             current_preset: None,
             state: RenderState::default(),
             config,
@@ -134,7 +139,8 @@ impl MilkEngine {
     }
     
     /// Update engine with audio data and render a frame.
-    pub fn update(&mut self, audio_samples: &[f32], delta_time: f32) -> Result<()> {
+    /// Returns Some(PresetChange) if beat detection triggered a preset change.
+    pub fn update(&mut self, audio_samples: &[f32], delta_time: f32) -> Result<Option<PresetChange>> {
         // Analyze audio
         let audio_levels = self.audio_analyzer.analyze(audio_samples);
         
@@ -143,6 +149,13 @@ impl MilkEngine {
         
         // Update audio in state
         self.state.audio = audio_levels;
+        
+        // Check beat detection for automatic preset change
+        let preset_change = self.beat_detector.should_change_preset(
+            audio_levels.bass,
+            audio_levels.mid,
+            audio_levels.treb,
+        );
         
         // Update evaluator context
         let ctx = self.evaluator.context_mut();
@@ -177,7 +190,7 @@ impl MilkEngine {
         // Increment frame counter
         self.state.frame += 1;
         
-        Ok(())
+        Ok(preset_change)
     }
     
     /// Execute per-frame equations.
@@ -230,6 +243,36 @@ impl MilkEngine {
     /// Get current preset.
     pub fn current_preset(&self) -> Option<&MilkPreset> {
         self.current_preset.as_ref()
+    }
+    
+    /// Get the beat detector.
+    pub fn beat_detector(&self) -> &BeatDetector {
+        &self.beat_detector
+    }
+    
+    /// Get the beat detector mutably.
+    pub fn beat_detector_mut(&mut self) -> &mut BeatDetector {
+        &mut self.beat_detector
+    }
+    
+    /// Set beat detection mode.
+    pub fn set_beat_detection_mode(&mut self, mode: BeatDetectionMode) {
+        self.beat_detector.set_mode(mode);
+    }
+    
+    /// Toggle beat detection to next mode.
+    pub fn next_beat_detection_mode(&mut self) {
+        self.beat_detector.next_mode();
+    }
+    
+    /// Enable beat detection.
+    pub fn enable_beat_detection(&mut self) {
+        self.beat_detector.enable();
+    }
+    
+    /// Disable beat detection.
+    pub fn disable_beat_detection(&mut self) {
+        self.beat_detector.disable();
     }
     
     /// Reset engine state.

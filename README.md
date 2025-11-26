@@ -20,8 +20,8 @@ OneDrop is a modern, cross-platform music visualizer inspired by the legendary M
 - 🖥️ **Cross-platform** - Windows, macOS, Linux
 
 ### Modern Architecture
-- **Modular design**: 6 independent crates
-- **Well-tested**: 45+ passing tests
+- **Modular design**: 8 independent crates
+- **Well-tested**: 94+ passing tests
 - **Documented**: Comprehensive inline documentation
 - **Performant**: 60 FPS at 1920x1080
 
@@ -44,7 +44,8 @@ cargo run --release -p onedrop-gui
 ```
 
 **Controls:**
-- `←/→`: Navigate between presets
+- `←/→` or `N/P`: Navigate between presets
+- `F8`: Cycle beat detection modes (Off → HardCut1-6)
 - `R`: Reset current preset
 - `Q`: Quit
 

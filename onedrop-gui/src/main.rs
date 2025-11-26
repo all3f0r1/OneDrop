@@ -1,7 +1,7 @@
 //! OneDrop GUI - Graphical user interface for Milkdrop visualizations
 
 use anyhow::Result;
-use onedrop_engine::{EngineConfig, MilkEngine, PresetManager, RenderConfig};
+use onedrop_engine::{BeatDetectionMode, EngineConfig, MilkEngine, PresetChange, PresetManager, RenderConfig};
 use std::sync::Arc;
 use std::time::Instant;
 use winit::{
@@ -157,7 +157,31 @@ impl App {
             .collect();
         
         // Update engine
-        engine.update(&audio_samples, delta_time)?;
+        let preset_change = engine.update(&audio_samples, delta_time)?;
+        
+        // Handle automatic preset change from beat detection
+        if let Some(change) = preset_change {
+            match change {
+                PresetChange::Random => {
+                    // Load random preset
+                    if let Some(preset_path) = self.preset_manager.random_preset() {
+                        if let Err(e) = engine.load_preset(preset_path) {
+                            log::error!("Failed to load random preset: {}", e);
+                        } else {
+                            log::info!("Beat detection: Loaded random preset: {}", preset_path.display());
+                        }
+                    }
+                }
+                PresetChange::Specific(path) => {
+                    // Load specific preset
+                    if let Err(e) = engine.load_preset(&path) {
+                        log::error!("Failed to load specific preset {}: {}", path, e);
+                    } else {
+                        log::info!("Beat detection: Loaded specific preset: {}", path);
+                    }
+                }
+            }
+        }
         
         // Get surface texture
         let output = surface.get_current_texture()?;
@@ -234,6 +258,26 @@ impl App {
                 if let Some(engine) = &mut self.engine {
                     engine.reset();
                     log::info!("Engine reset");
+                }
+            }
+            KeyCode::F8 => {
+                // Toggle beat detection mode
+                if let Some(engine) = &mut self.engine {
+                    engine.next_beat_detection_mode();
+                    let mode = engine.beat_detector().mode();
+                    log::info!("Beat detection mode: {}", mode.name());
+                    
+                    // Print mode description
+                    let description = match mode {
+                        BeatDetectionMode::Off => "Off - No automatic preset changes",
+                        BeatDetectionMode::HardCut1 => "HardCut1 - Change on bass > 1.5 (delay 0.2s)",
+                        BeatDetectionMode::HardCut2 => "HardCut2 - Change on treb > 2.9 (delay 0.5s)",
+                        BeatDetectionMode::HardCut3 => "HardCut3 - Change on treb > 2.9 (delay 1s)",
+                        BeatDetectionMode::HardCut4 => "HardCut4 - Change on treb > 2.9 (delay 3s) or treb > 8",
+                        BeatDetectionMode::HardCut5 => "HardCut5 - Change on treb > 2.9 (delay 5s)",
+                        BeatDetectionMode::HardCut6 { .. } => "HardCut6 - Change on bass > 1.5, special on bass > 4.90",
+                    };
+                    log::info!("  {}", description);
                 }
             }
             KeyCode::Escape | KeyCode::KeyQ => {

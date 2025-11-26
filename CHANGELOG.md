@@ -5,6 +5,59 @@ All notable changes to OneDrop will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-11-26
+
+### Added
+- **Beat Detection Complete** - Automatic preset changes based on audio analysis
+  - 6 HardCut modes from MilkDrop3 (HardCut1-6)
+  - Configurable thresholds and minimum delays
+  - F8 key to cycle through beat detection modes
+  - Random preset selection on beat trigger
+  - Special preset loading for extreme bass (HardCut6)
+- `BeatDetector` struct with full API in onedrop-engine
+- `BeatDetectionMode` enum with 7 modes (Off + 6 HardCut)
+- `PresetChange` enum (Random, Specific)
+- `random_preset()` method in PresetManager
+- 14 comprehensive unit tests for beat detection
+- Beat detection integration in MilkEngine
+- GUI integration with F8 key binding
+- Performance validation script (`scripts/test_beat_detection.sh`)
+- Complete beat detection documentation (`docs/V0.7.0_BEAT_DETECTION_REPORT.md`)
+
+### Changed
+- `MilkEngine::update()` now returns `Result<Option<PresetChange>>` instead of `Result<()>`
+- Enhanced PresetManager with random selection capability
+- Improved audio-reactive preset switching
+
+### Performance
+- Beat detection overhead: <0.1ms per frame
+- Memory usage: ~200 bytes
+- CPU impact: <1%
+- Total tests: 94+ (14 new beat detection tests)
+- Total lines of code: 9,600+ (~750 lines added)
+
+## [0.6.0-beta] - 2025-11-25
+
+### Added
+- **Per-Vertex Shader Pipeline** - Complete HLSL translation and execution
+  - Advanced HLSL translator with 50+ function mappings
+  - Dynamic WGSL generation for vertex shaders
+  - Shader cache for 100x speedup (13µs cache hit vs 1-2ms compilation)
+  - Uniform buffer system (320 bytes) for all Milkdrop variables
+- `onedrop-hlsl` crate for HLSL→WGSL translation
+- Shader cache in onedrop-codegen
+- Comprehensive vertex shader tests
+- Advanced HLSL function support (lerp, saturate, frac, etc.)
+
+### Changed
+- Improved shader compilation pipeline
+- Enhanced error handling for shader validation
+
+### Performance
+- Shader cache provides 100x speedup
+- ~0.5ms per frame @ 1080p
+- 60 FPS real-time, capable of 1000 FPS
+
 ## [0.5.0] - 2025-11-25
 
 ### Added

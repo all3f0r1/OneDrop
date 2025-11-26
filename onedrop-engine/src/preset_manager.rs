@@ -88,6 +88,23 @@ impl PresetManager {
         self.preset_queue.get(self.current_index).map(|p| p.as_path())
     }
     
+    /// Get a random preset path.
+    pub fn random_preset(&mut self) -> Option<&Path> {
+        if self.preset_queue.is_empty() {
+            return None;
+        }
+        
+        // Use system time for randomness
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let seed = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos() as usize;
+        
+        self.current_index = seed % self.preset_queue.len();
+        self.preset_queue.get(self.current_index).map(|p| p.as_path())
+    }
+    
     /// Start a transition to the next preset.
     pub fn start_transition(&mut self, duration: f32) {
         self.transition = TransitionState::Transitioning {

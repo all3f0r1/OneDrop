@@ -1,0 +1,15 @@
+{
+  "$schema": "https://claude.ai/schema/mcp.json",
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/context7"],
+      "description": "Live documentation lookup for Rust crates (wgpu, winit, clap, etc.)"
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/github-mcp"],
+      "description": "GitHub integration for issues, PRs, and repository operations"
+    }
+  }
+}

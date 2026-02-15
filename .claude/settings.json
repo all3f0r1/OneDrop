@@ -1,0 +1,50 @@
+{
+  "$schema": "https://claude.ai/schema/settings.json",
+  "project": {
+    "name": "OneDrop",
+    "description": "Pure Rust Milkdrop visualization engine"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo '{{file_path}}' | grep -q '\\.rs$'; then cargo clippy --all-targets -- -D warnings 2>&1 | head -30; fi"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "pathPattern": "Cargo\\.lock",
+        "type": "reject",
+        "message": "Cargo.lock should not be manually edited. Use cargo update instead."
+      },
+      {
+        "matcher": "Write",
+        "pathPattern": "target/.*",
+        "type": "reject",
+        "message": "The target/ directory contains build artifacts and should not be modified."
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read(**)",
+      "Edit(**/*.rs)",
+      "Edit(**/*.toml)",
+      "Edit(**/*.md)",
+      "Write(**/*.md)",
+      "Bash(cargo check:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo build:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ]
+  }
+}

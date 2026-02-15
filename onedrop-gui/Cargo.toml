@@ -28,4 +28,4 @@ log = "0.4"
 anyhow = "1.0"
 
 # Async
-pollster = "0.3"
+pollster = "0.4"

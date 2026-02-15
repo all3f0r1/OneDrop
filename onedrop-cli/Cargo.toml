@@ -26,7 +26,7 @@ log = "0.4"
 anyhow = "1.0"
 
 # Async runtime
-pollster = "0.3"
+pollster = "0.4"
 
 # Image export
 image = "0.25"

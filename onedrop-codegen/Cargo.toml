@@ -18,7 +18,7 @@ log = "0.4"
 evalexpr = "13.0"
 
 # Shader validation
-naga = { version = "22.0", features = ["wgsl-in", "wgsl-out"] }
+naga = { version = "28.0", features = ["wgsl-in", "wgsl-out"] }
 
 [dev-dependencies]
 env_logger = "0.11"

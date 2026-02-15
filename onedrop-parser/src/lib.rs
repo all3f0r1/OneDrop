@@ -56,7 +56,7 @@ per_pixel_1=zoom=zoom+0.1;
 
         let result = parse_preset(input);
         assert!(result.is_ok());
-        
+
         let preset = result.unwrap();
         assert_eq!(preset.version, 201);
     }

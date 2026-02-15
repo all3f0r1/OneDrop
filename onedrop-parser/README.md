@@ -1,4 +1,4 @@
-# milk-parser
+# onedrop-parser
 
 A Rust parser for Milkdrop `.milk` preset files.
 
@@ -16,7 +16,7 @@ This crate provides functionality to parse Milkdrop visualization presets into s
 ## Usage
 
 ```rust
-use milk_parser::parse_preset;
+use onedrop_parser::parse_preset;
 use std::fs;
 
 // Read a .milk file

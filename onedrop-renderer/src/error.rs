@@ -10,25 +10,22 @@ pub type Result<T> = std::result::Result<T, RenderError>;
 pub enum RenderError {
     /// GPU device creation failed
     DeviceCreationFailed(String),
-    
+
     /// Shader compilation failed
-    ShaderCompilationFailed {
-        shader_name: String,
-        reason: String,
-    },
-    
+    ShaderCompilationFailed { shader_name: String, reason: String },
+
     /// Texture creation failed
     TextureCreationFailed(String),
-    
+
     /// Buffer creation failed
     BufferCreationFailed(String),
-    
+
     /// Rendering failed
     RenderFailed(String),
-    
+
     /// Invalid configuration
     InvalidConfiguration(String),
-    
+
     /// Generic error
     Other(String),
 }
@@ -39,7 +36,10 @@ impl fmt::Display for RenderError {
             RenderError::DeviceCreationFailed(msg) => {
                 write!(f, "GPU device creation failed: {}", msg)
             }
-            RenderError::ShaderCompilationFailed { shader_name, reason } => {
+            RenderError::ShaderCompilationFailed {
+                shader_name,
+                reason,
+            } => {
                 write!(f, "Shader '{}' compilation failed: {}", shader_name, reason)
             }
             RenderError::TextureCreationFailed(msg) => {

@@ -12,10 +12,10 @@ pub mod beat_detection;
 pub mod default_preset;
 pub mod engine;
 pub mod error;
-pub mod safe_loader;
 pub mod fft;
 pub mod history;
 pub mod preset_manager;
+pub mod safe_loader;
 pub mod transition;
 
 pub use audio::AudioAnalyzer;
@@ -25,10 +25,10 @@ pub use beat_detection::{BeatDetectionMode, BeatDetector, PresetChange};
 pub use default_preset::default_preset;
 pub use engine::{EngineConfig, MilkEngine, QualityPreset};
 pub use error::{EngineError, Result};
-pub use safe_loader::SafePresetLoader;
 pub use fft::FFTAnalyzer;
 pub use history::{ColorState, History, MashUpState, MashUpType};
 pub use preset_manager::{PresetManager, TransitionState};
+pub use safe_loader::SafePresetLoader;
 pub use transition::{Transition, TransitionManager, TransitionMode};
 
 // Re-export commonly used types

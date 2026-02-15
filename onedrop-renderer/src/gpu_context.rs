@@ -3,28 +3,27 @@
 use crate::config::RenderConfig;
 use crate::error::{RenderError, Result};
 use std::sync::Arc;
-use wgpu::util::DeviceExt;
 
 /// GPU context containing device, queue, and resources.
 pub struct GpuContext {
     /// WGPU device
     pub device: Arc<wgpu::Device>,
-    
+
     /// Command queue
     pub queue: Arc<wgpu::Queue>,
-    
+
     /// Render configuration
     pub config: RenderConfig,
-    
+
     /// Main render texture
     pub render_texture: wgpu::Texture,
-    
+
     /// Render texture view
     pub render_texture_view: wgpu::TextureView,
-    
+
     /// Previous frame texture (for feedback effects)
     pub prev_texture: wgpu::Texture,
-    
+
     /// Previous frame texture view
     pub prev_texture_view: wgpu::TextureView,
 }
@@ -37,7 +36,7 @@ impl GpuContext {
             backends: wgpu::Backends::all(),
             ..Default::default()
         });
-        
+
         // Request adapter
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -46,8 +45,10 @@ impl GpuContext {
                 force_fallback_adapter: false,
             })
             .await
-            .ok_or_else(|| RenderError::DeviceCreationFailed("No suitable GPU adapter found".to_string()))?;
-        
+            .ok_or_else(|| {
+                RenderError::DeviceCreationFailed("No suitable GPU adapter found".to_string())
+            })?;
+
         // Request device and queue
         let (device, queue) = adapter
             .request_device(
@@ -60,17 +61,18 @@ impl GpuContext {
                 None,
             )
             .await?;
-        
+
         let device = Arc::new(device);
         let queue = Arc::new(queue);
-        
+
         // Create render textures
         let render_texture = Self::create_texture(&device, &config, "Render Texture");
-        let render_texture_view = render_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
+        let render_texture_view =
+            render_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
         let prev_texture = Self::create_texture(&device, &config, "Previous Frame Texture");
         let prev_texture_view = prev_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
+
         Ok(Self {
             device,
             queue,
@@ -81,17 +83,22 @@ impl GpuContext {
             prev_texture_view,
         })
     }
-    
+
     /// Create a GPU context from an existing device and queue.
     /// This is useful when sharing a GPU context between multiple components.
-    pub fn from_device(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>, config: RenderConfig) -> Self {
+    pub fn from_device(
+        device: Arc<wgpu::Device>,
+        queue: Arc<wgpu::Queue>,
+        config: RenderConfig,
+    ) -> Self {
         // Create render textures
         let render_texture = Self::create_texture(&device, &config, "Render Texture");
-        let render_texture_view = render_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
+        let render_texture_view =
+            render_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
         let prev_texture = Self::create_texture(&device, &config, "Previous Frame Texture");
         let prev_texture_view = prev_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
+
         Self {
             device,
             queue,
@@ -102,7 +109,7 @@ impl GpuContext {
             prev_texture_view,
         }
     }
-    
+
     /// Create a texture with the given configuration.
     fn create_texture(device: &wgpu::Device, config: &RenderConfig, label: &str) -> wgpu::Texture {
         device.create_texture(&wgpu::TextureDescriptor {
@@ -123,13 +130,13 @@ impl GpuContext {
             view_formats: &[],
         })
     }
-    
+
     /// Swap render and previous textures (for feedback effects).
     pub fn swap_textures(&mut self) {
         std::mem::swap(&mut self.render_texture, &mut self.prev_texture);
         std::mem::swap(&mut self.render_texture_view, &mut self.prev_texture_view);
     }
-    
+
     /// Copy current render texture to previous texture.
     pub fn copy_to_prev(&self, encoder: &mut wgpu::CommandEncoder) {
         encoder.copy_texture_to_texture(
@@ -152,19 +159,24 @@ impl GpuContext {
             },
         );
     }
-    
+
     /// Resize textures.
     pub fn resize(&mut self, width: u32, height: u32) {
         self.config.width = width;
         self.config.height = height;
-        
+
         self.render_texture = Self::create_texture(&self.device, &self.config, "Render Texture");
-        self.render_texture_view = self.render_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
-        self.prev_texture = Self::create_texture(&self.device, &self.config, "Previous Frame Texture");
-        self.prev_texture_view = self.prev_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        self.render_texture_view = self
+            .render_texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.prev_texture =
+            Self::create_texture(&self.device, &self.config, "Previous Frame Texture");
+        self.prev_texture_view = self
+            .prev_texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
     }
-    
+
     /// Get aspect ratio.
     pub fn aspect_ratio(&self) -> f32 {
         self.config.width as f32 / self.config.height as f32

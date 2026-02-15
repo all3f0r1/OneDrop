@@ -10,22 +10,22 @@ pub type Result<T> = std::result::Result<T, EngineError>;
 pub enum EngineError {
     /// Preset loading failed
     PresetLoadFailed(String),
-    
+
     /// Preset parsing failed
     PresetParseFailed(onedrop_parser::ParseError),
-    
+
     /// Expression evaluation failed
     EvalFailed(onedrop_eval::EvalError),
-    
+
     /// Rendering failed
     RenderFailed(onedrop_renderer::RenderError),
-    
+
     /// No preset loaded
     NoPresetLoaded,
-    
+
     /// Invalid audio data
     InvalidAudioData(String),
-    
+
     /// Generic error
     Other(String),
 }

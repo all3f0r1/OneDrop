@@ -9,19 +9,19 @@ pub mod blend_renderer;
 pub mod config;
 pub mod error;
 pub mod gpu_context;
-pub mod renderer;
-pub mod waveform;
 pub mod per_pixel_pipeline;
 pub mod per_vertex_pipeline;
+pub mod renderer;
+pub mod waveform;
 
 pub use blend_renderer::BlendRenderer;
 pub use config::{AudioLevels, MotionParams, RenderConfig, RenderState, WaveParams};
 pub use error::{RenderError, Result};
 pub use gpu_context::GpuContext;
+pub use per_pixel_pipeline::{PerPixelPipeline, PixelVarsUniform};
 pub use per_vertex_pipeline::{PerVertexPipeline, VertexVarsUniform};
 pub use renderer::MilkRenderer;
-pub use waveform::{WaveformMode, WaveformRenderer, WavePoint};
-pub use per_pixel_pipeline::{PerPixelPipeline, PixelVarsUniform};
+pub use waveform::{WavePoint, WaveformMode, WaveformRenderer};
 
 #[cfg(test)]
 mod tests {

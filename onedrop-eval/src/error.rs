@@ -9,26 +9,20 @@ pub type Result<T> = std::result::Result<T, EvalError>;
 #[derive(Debug, Clone, PartialEq)]
 pub enum EvalError {
     /// Syntax error in expression
-    SyntaxError {
-        expression: String,
-        reason: String,
-    },
-    
+    SyntaxError { expression: String, reason: String },
+
     /// Undefined variable
     UndefinedVariable(String),
-    
+
     /// Undefined function
     UndefinedFunction(String),
-    
+
     /// Type mismatch
-    TypeError {
-        expected: String,
-        got: String,
-    },
-    
+    TypeError { expected: String, got: String },
+
     /// Division by zero
     DivisionByZero,
-    
+
     /// Generic evaluation error
     EvalFailed(String),
 }

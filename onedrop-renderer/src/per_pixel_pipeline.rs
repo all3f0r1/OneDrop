@@ -14,7 +14,7 @@ pub struct PixelVarsUniform {
     pub y: f32,
     pub rad: f32,
     pub ang: f32,
-    
+
     // Audio
     pub bass: f32,
     pub mid: f32,
@@ -22,15 +22,15 @@ pub struct PixelVarsUniform {
     pub bass_att: f32,
     pub mid_att: f32,
     pub treb_att: f32,
-    
+
     // Time
     pub time: f32,
     pub frame: f32,
     pub fps: f32,
-    
+
     // Padding for alignment
     pub _padding: f32,
-    
+
     // Custom variables (64 floats as 16 vec4s)
     pub q: [[f32; 4]; 16],
 }
@@ -58,24 +58,25 @@ impl Default for PixelVarsUniform {
 }
 
 /// Per-pixel rendering pipeline
+#[allow(dead_code)]
 pub struct PerPixelPipeline {
     device: wgpu::Device,
     queue: wgpu::Queue,
-    
+
     // Pipeline state
     render_pipeline: Option<wgpu::RenderPipeline>,
     bind_group_layout: wgpu::BindGroupLayout,
     bind_group: Option<wgpu::BindGroup>,
-    
+
     // Uniform buffer
     vars_buffer: wgpu::Buffer,
     vars: PixelVarsUniform,
-    
+
     // Textures
     input_texture: Option<wgpu::Texture>,
     output_texture: Option<wgpu::Texture>,
     sampler: wgpu::Sampler,
-    
+
     // Resolution
     width: u32,
     height: u32,
@@ -90,7 +91,7 @@ impl PerPixelPipeline {
             contents: bytemuck::cast_slice(&[vars]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-        
+
         // Create bind group layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Per-Pixel Bind Group Layout"),
@@ -126,7 +127,7 @@ impl PerPixelPipeline {
                 },
             ],
         });
-        
+
         // Create sampler
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("Per-Pixel Sampler"),
@@ -138,7 +139,7 @@ impl PerPixelPipeline {
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
-        
+
         Ok(Self {
             device,
             queue,
@@ -154,73 +155,78 @@ impl PerPixelPipeline {
             height,
         })
     }
-    
+
     /// Set the shader module from compiled WGSL
     pub fn set_shader(&mut self, shader_module: &wgpu::ShaderModule) -> Result<()> {
-        let pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Per-Pixel Pipeline Layout"),
-            bind_group_layouts: &[&self.bind_group_layout],
-            push_constant_ranges: &[],
-        });
-        
-        self.render_pipeline = Some(self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Per-Pixel Render Pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: shader_module,
-                entry_point: Some("vs_main"),
-                buffers: &[],
-                compilation_options: Default::default(),
+        let pipeline_layout = self
+            .device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Per-Pixel Pipeline Layout"),
+                bind_group_layouts: &[&self.bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
+        self.render_pipeline = Some(self.device.create_render_pipeline(
+            &wgpu::RenderPipelineDescriptor {
+                label: Some("Per-Pixel Render Pipeline"),
+                layout: Some(&pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: shader_module,
+                    entry_point: Some("vs_main"),
+                    buffers: &[],
+                    compilation_options: Default::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: shader_module,
+                    entry_point: Some("fs_main"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: wgpu::TextureFormat::Rgba8Unorm,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: Default::default(),
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None,
+                    unclipped_depth: false,
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    conservative: false,
+                },
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    mask: !0,
+                    alpha_to_coverage_enabled: false,
+                },
+                multiview: None,
+                cache: None,
             },
-            fragment: Some(wgpu::FragmentState {
-                module: shader_module,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: wgpu::TextureFormat::Rgba8Unorm,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: Default::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None,
-                unclipped_depth: false,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-            cache: None,
-        }));
-        
+        ));
+
         Ok(())
     }
-    
+
     /// Update uniform variables
     pub fn update_vars(&mut self, vars: PixelVarsUniform) {
         self.vars = vars;
-        self.queue.write_buffer(&self.vars_buffer, 0, bytemuck::cast_slice(&[self.vars]));
+        self.queue
+            .write_buffer(&self.vars_buffer, 0, bytemuck::cast_slice(&[self.vars]));
     }
-    
+
     /// Set input texture
     pub fn set_input_texture(&mut self, texture: wgpu::Texture) {
         self.input_texture = Some(texture);
         self.update_bind_group();
     }
-    
+
     /// Update bind group with current textures
     fn update_bind_group(&mut self) {
         if let Some(ref input_texture) = self.input_texture {
             let input_view = input_texture.create_view(&wgpu::TextureViewDescriptor::default());
-            
+
             self.bind_group = Some(self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("Per-Pixel Bind Group"),
                 layout: &self.bind_group_layout,
@@ -241,19 +247,25 @@ impl PerPixelPipeline {
             }));
         }
     }
-    
+
     /// Render per-pixel effects
     pub fn render(&mut self, output_view: &wgpu::TextureView) -> Result<()> {
-        let pipeline = self.render_pipeline.as_ref()
+        let pipeline = self
+            .render_pipeline
+            .as_ref()
             .ok_or_else(|| RenderError::RenderFailed("No shader set".to_string()))?;
-        
-        let bind_group = self.bind_group.as_ref()
+
+        let bind_group = self
+            .bind_group
+            .as_ref()
             .ok_or_else(|| RenderError::RenderFailed("No bind group".to_string()))?;
-        
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Per-Pixel Render Encoder"),
-        });
-        
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Per-Pixel Render Encoder"),
+            });
+
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Per-Pixel Render Pass"),
@@ -269,14 +281,14 @@ impl PerPixelPipeline {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            
+
             render_pass.set_pipeline(pipeline);
             render_pass.set_bind_group(0, bind_group, &[]);
             render_pass.draw(0..6, 0..1); // Full-screen quad (2 triangles)
         }
-        
+
         self.queue.submit(Some(encoder.finish()));
-        
+
         Ok(())
     }
 }
@@ -284,13 +296,13 @@ impl PerPixelPipeline {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_pixel_vars_size() {
         // Verify struct size is correct (312 bytes)
         assert_eq!(std::mem::size_of::<PixelVarsUniform>(), 312);
     }
-    
+
     #[test]
     fn test_pixel_vars_default() {
         let vars = PixelVarsUniform::default();

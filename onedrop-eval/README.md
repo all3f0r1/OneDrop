@@ -1,4 +1,4 @@
-# milk-eval
+# onedrop-eval
 
 Expression evaluator for Milkdrop per-frame and per-pixel equations.
 

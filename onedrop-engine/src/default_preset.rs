@@ -3,7 +3,7 @@
 use onedrop_parser::MilkPreset;
 
 /// Create a default preset with safe parameters.
-/// 
+///
 /// This preset is used as a fallback when:
 /// - No preset is loaded
 /// - Preset loading fails
@@ -79,9 +79,8 @@ per_frame_3=wave_b = 0.5 + 0.5*sin(time*1.7);
 per_frame_4=rot = rot + 0.010*sin(time*0.381);
 per_frame_5=zoom = zoom + 0.010*sin(time*0.339);
 "#;
-    
-    onedrop_parser::parse_preset(content)
-        .expect("Default preset should always parse successfully")
+
+    onedrop_parser::parse_preset(content).expect("Default preset should always parse successfully")
 }
 
 #[cfg(test)]

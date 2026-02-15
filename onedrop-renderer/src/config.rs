@@ -7,19 +7,19 @@ use serde::{Deserialize, Serialize};
 pub struct RenderConfig {
     /// Output resolution width
     pub width: u32,
-    
+
     /// Output resolution height
     pub height: u32,
-    
+
     /// Texture format
     pub texture_format: TextureFormat,
-    
+
     /// Enable multisampling
     pub msaa_samples: u32,
-    
+
     /// Enable VSync
     pub vsync: bool,
-    
+
     /// Target FPS (0 = unlimited)
     pub target_fps: u32,
 }
@@ -59,20 +59,20 @@ impl TextureFormat {
 }
 
 /// Render state containing dynamic parameters.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct RenderState {
     /// Current time in seconds
     pub time: f32,
-    
+
     /// Current frame number
     pub frame: u32,
-    
+
     /// Audio levels (bass, mid, treble)
     pub audio: AudioLevels,
-    
+
     /// Motion parameters
     pub motion: MotionParams,
-    
+
     /// Wave parameters
     pub wave: WaveParams,
 }

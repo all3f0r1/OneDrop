@@ -17,7 +17,7 @@ pub use context::MilkContext;
 pub use error::{EvalError, Result};
 pub use evaluator::MilkEvaluator;
 pub use evaluator_optimized::OptimizedEvaluator;
-pub use math_functions::{register_math_functions, list_math_functions};
+pub use math_functions::{list_math_functions, register_math_functions};
 
 /// Evaluate a simple expression with default context.
 ///

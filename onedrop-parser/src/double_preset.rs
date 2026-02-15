@@ -3,8 +3,8 @@
 //! Inspired by MilkDrop3's .milk2 format, this allows blending two presets
 //! with 27 different blending patterns for creative combinations.
 
+use crate::error::Result;
 use crate::preset::MilkPreset;
-use crate::error::{ParseError, Result};
 use serde::{Deserialize, Serialize};
 
 /// A double-preset that blends two presets together.
@@ -12,19 +12,19 @@ use serde::{Deserialize, Serialize};
 pub struct DoublePreset {
     /// First preset (A)
     pub preset_a: MilkPreset,
-    
+
     /// Second preset (B)
     pub preset_b: MilkPreset,
-    
+
     /// Blending pattern
     pub blend_pattern: BlendPattern,
-    
+
     /// Blend amount (0.0 = all A, 1.0 = all B)
     pub blend_amount: f32,
-    
+
     /// Whether to animate the blend
     pub animate_blend: bool,
-    
+
     /// Animation speed (if animate_blend is true)
     pub animation_speed: f32,
 }
@@ -37,82 +37,82 @@ pub struct DoublePreset {
 pub enum BlendPattern {
     /// Simple alpha blend
     Alpha = 0,
-    
+
     /// Additive blending
     Additive = 1,
-    
+
     /// Multiply blending
     Multiply = 2,
-    
+
     /// Screen blending
     Screen = 3,
-    
+
     /// Overlay blending
     Overlay = 4,
-    
+
     /// Darken (min)
     Darken = 5,
-    
+
     /// Lighten (max)
     Lighten = 6,
-    
+
     /// Color dodge
     ColorDodge = 7,
-    
+
     /// Color burn
     ColorBurn = 8,
-    
+
     /// Hard light
     HardLight = 9,
-    
+
     /// Soft light
     SoftLight = 10,
-    
+
     /// Difference
     Difference = 11,
-    
+
     /// Exclusion
     Exclusion = 12,
-    
+
     /// Plasma blend
     Plasma = 13,
-    
+
     /// Snail blend (spiral pattern)
     Snail = 14,
-    
+
     /// Triangle blend
     Triangle = 15,
-    
+
     /// Donuts blend (circular pattern)
     Donuts = 16,
-    
+
     /// Checkerboard blend
     Checkerboard = 17,
-    
+
     /// Horizontal stripes
     HorizontalStripes = 18,
-    
+
     /// Vertical stripes
     VerticalStripes = 19,
-    
+
     /// Diagonal stripes
     DiagonalStripes = 20,
-    
+
     /// Radial blend (from center)
     Radial = 21,
-    
+
     /// Angular blend (rotating)
     Angular = 22,
-    
+
     /// Perlin noise blend
     PerlinNoise = 23,
-    
+
     /// Voronoi blend
     Voronoi = 24,
-    
+
     /// Wave blend (sine wave pattern)
     Wave = 25,
-    
+
     /// Random pixel blend
     RandomPixel = 26,
 }
@@ -150,7 +150,7 @@ impl BlendPattern {
             BlendPattern::RandomPixel,
         ]
     }
-    
+
     /// Get pattern name.
     pub fn name(&self) -> &'static str {
         match self {
@@ -183,7 +183,7 @@ impl BlendPattern {
             BlendPattern::RandomPixel => "Random Pixel",
         }
     }
-    
+
     /// Get pattern from index.
     pub fn from_index(index: usize) -> Option<BlendPattern> {
         match index {
@@ -244,19 +244,19 @@ impl DoublePreset {
             animation_speed: 1.0,
         }
     }
-    
+
     /// Create with specific blend pattern.
     pub fn with_pattern(mut self, pattern: BlendPattern) -> Self {
         self.blend_pattern = pattern;
         self
     }
-    
+
     /// Set blend amount.
     pub fn with_blend_amount(mut self, amount: f32) -> Self {
         self.blend_amount = amount.clamp(0.0, 1.0);
         self
     }
-    
+
     /// Enable animation.
     pub fn with_animation(mut self, speed: f32) -> Self {
         self.animate_blend = true;
@@ -279,29 +279,29 @@ pub fn parse_double_preset(content: &str) -> Result<DoublePreset> {
     //
     // [PresetB]
     // <preset B content>
-    
+
     let mut blend_pattern = BlendPattern::Alpha;
     let mut blend_amount = 0.5;
     let mut animate_blend = false;
     let mut animation_speed = 1.0;
-    
+
     let mut preset_a_content = String::new();
     let mut preset_b_content = String::new();
-    
+
     let mut current_section = "";
-    
+
     for line in content.lines() {
         let trimmed = line.trim();
-        
+
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            let section = &trimmed[1..trimmed.len()-1];
-            
+            let section = &trimmed[1..trimmed.len() - 1];
+
             // Handle top-level sections
             if section == "DoublePreset" || section == "PresetA" || section == "PresetB" {
                 current_section = section;
                 continue;
             }
-            
+
             // For preset internal sections like [preset00], add to current preset content
             match current_section {
                 "PresetA" => {
@@ -316,15 +316,15 @@ pub fn parse_double_preset(content: &str) -> Result<DoublePreset> {
             }
             continue;
         }
-        
+
         match current_section {
             "DoublePreset" => {
                 if let Some((key, value)) = trimmed.split_once('=') {
                     match key.trim() {
                         "BlendPattern" => {
                             if let Ok(index) = value.trim().parse::<usize>() {
-                                blend_pattern = BlendPattern::from_index(index)
-                                    .unwrap_or(BlendPattern::Alpha);
+                                blend_pattern =
+                                    BlendPattern::from_index(index).unwrap_or(BlendPattern::Alpha);
                             }
                         }
                         "BlendAmount" => {
@@ -355,11 +355,11 @@ pub fn parse_double_preset(content: &str) -> Result<DoublePreset> {
             _ => {}
         }
     }
-    
+
     // Parse both presets
     let preset_a = crate::parse_preset(&preset_a_content)?;
     let preset_b = crate::parse_preset(&preset_b_content)?;
-    
+
     Ok(DoublePreset {
         preset_a,
         preset_b,
@@ -373,31 +373,34 @@ pub fn parse_double_preset(content: &str) -> Result<DoublePreset> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_blend_pattern_all() {
         let patterns = BlendPattern::all();
         assert_eq!(patterns.len(), 27);
     }
-    
+
     #[test]
     fn test_blend_pattern_from_index() {
         assert_eq!(BlendPattern::from_index(0), Some(BlendPattern::Alpha));
         assert_eq!(BlendPattern::from_index(13), Some(BlendPattern::Plasma));
-        assert_eq!(BlendPattern::from_index(26), Some(BlendPattern::RandomPixel));
+        assert_eq!(
+            BlendPattern::from_index(26),
+            Some(BlendPattern::RandomPixel)
+        );
         assert_eq!(BlendPattern::from_index(27), None);
     }
-    
+
     #[test]
     fn test_double_preset_creation() {
         let preset_a = MilkPreset::default();
         let preset_b = MilkPreset::default();
-        
+
         let double = DoublePreset::new(preset_a, preset_b)
             .with_pattern(BlendPattern::Plasma)
             .with_blend_amount(0.7)
             .with_animation(2.0);
-        
+
         assert_eq!(double.blend_pattern, BlendPattern::Plasma);
         assert_eq!(double.blend_amount, 0.7);
         assert!(double.animate_blend);

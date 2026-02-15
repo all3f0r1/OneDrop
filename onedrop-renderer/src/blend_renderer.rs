@@ -3,7 +3,7 @@
 //! This module implements rendering of two presets simultaneously with
 //! 27 different blending patterns.
 
-use crate::error::{RenderError, Result};
+use crate::error::Result;
 use std::sync::Arc;
 use wgpu::{Device, Queue, TextureView};
 
@@ -37,7 +37,11 @@ struct BlendUniforms {
 
 impl BlendRenderer {
     /// Create a new blend renderer.
-    pub fn new(device: Arc<Device>, queue: Arc<Queue>, texture_format: wgpu::TextureFormat) -> Result<Self> {
+    pub fn new(
+        device: Arc<Device>,
+        queue: Arc<Queue>,
+        texture_format: wgpu::TextureFormat,
+    ) -> Result<Self> {
         // Create uniform buffer
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Blend Uniform Buffer"),
@@ -45,7 +49,7 @@ impl BlendRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         // Create sampler
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("Blend Sampler"),
@@ -57,7 +61,7 @@ impl BlendRenderer {
             mipmap_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        
+
         // Create bind group layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Blend Bind Group Layout"),
@@ -104,20 +108,20 @@ impl BlendRenderer {
                 },
             ],
         });
-        
+
         // Load shader
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Blend Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/blend.wgsl").into()),
         });
-        
+
         // Create pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Blend Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
-        
+
         // Create render pipeline
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Blend Pipeline"),
@@ -156,7 +160,7 @@ impl BlendRenderer {
             multiview: None,
             cache: None,
         });
-        
+
         Ok(Self {
             device,
             queue,
@@ -183,11 +187,7 @@ impl BlendRenderer {
     }
 
     /// Create and cache a new bind group for the texture pair.
-    fn create_and_cache_bind_group(
-        &mut self,
-        texture_a: &TextureView,
-        texture_b: &TextureView,
-    ) {
+    fn create_and_cache_bind_group(&mut self, texture_a: &TextureView, texture_b: &TextureView) {
         // Use pointer addresses as cache keys (texture views are immutable)
         let key_a = texture_a as *const _ as usize;
         let key_b = texture_b as *const _ as usize;
@@ -241,7 +241,8 @@ impl BlendRenderer {
             time,
             _padding: 0.0,
         };
-        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+        self.queue
+            .write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
 
         // Check if we need to create a new bind group
         let key_a = texture_a as *const _ as usize;
@@ -251,13 +252,17 @@ impl BlendRenderer {
             self.create_and_cache_bind_group(texture_a, texture_b);
         }
 
-        let bind_group = self.get_cached_bind_group().expect("bind group should be cached");
-        
+        let bind_group = self
+            .get_cached_bind_group()
+            .expect("bind group should be cached");
+
         // Create command encoder
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Blend Encoder"),
-        });
-        
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Blend Encoder"),
+            });
+
         // Render pass
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -274,15 +279,15 @@ impl BlendRenderer {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            
+
             render_pass.set_pipeline(&self.pipeline);
             render_pass.set_bind_group(0, bind_group, &[]);
             render_pass.draw(0..3, 0..1);
         }
-        
+
         // Submit commands
         self.queue.submit(std::iter::once(encoder.finish()));
-        
+
         Ok(())
     }
 }
@@ -290,7 +295,7 @@ impl BlendRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_blend_uniforms_size() {
         assert_eq!(std::mem::size_of::<BlendUniforms>(), 16);

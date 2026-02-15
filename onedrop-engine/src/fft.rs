@@ -42,7 +42,7 @@ impl FFTAnalyzer {
             log::warn!("FFT size must be a power of 2, got {}", fft_size);
             return None;
         }
-        
+
         // Create Hann window
         let window: Vec<f32> = (0..fft_size)
             .map(|i| {
@@ -68,70 +68,75 @@ impl FFTAnalyzer {
             Self::new(256, sample_rate).expect("256 is always valid")
         })
     }
-    
+
     /// Analyze audio samples and return frequency bins.
     pub fn analyze(&mut self, samples: &[f32]) -> &[f32] {
         // Ensure we have enough samples
         let num_samples = samples.len().min(self.fft_size);
-        
+
         // Apply window and copy to FFT buffer
-        for i in 0..num_samples {
-            self.fft_buffer[i * 2] = samples[i] * self.window[i]; // Real
+        for (i, (sample, window)) in samples
+            .iter()
+            .zip(self.window.iter())
+            .take(num_samples)
+            .enumerate()
+        {
+            self.fft_buffer[i * 2] = sample * window; // Real
             self.fft_buffer[i * 2 + 1] = 0.0; // Imaginary
         }
-        
+
         // Zero-pad if necessary
         for i in num_samples..self.fft_size {
             self.fft_buffer[i * 2] = 0.0;
             self.fft_buffer[i * 2 + 1] = 0.0;
         }
-        
+
         // Perform FFT (simple implementation)
         self.fft_inplace();
-        
+
         // Calculate magnitude spectrum
         for i in 0..self.bins.len() {
             let real = self.fft_buffer[i * 2];
             let imag = self.fft_buffer[i * 2 + 1];
             self.bins[i] = (real * real + imag * imag).sqrt() / self.fft_size as f32;
         }
-        
+
         &self.bins
     }
-    
+
     /// Get bass level (20-250 Hz).
     pub fn get_bass(&self) -> f32 {
         self.get_frequency_range(20.0, 250.0)
     }
-    
+
     /// Get mid level (250-2000 Hz).
     pub fn get_mid(&self) -> f32 {
         self.get_frequency_range(250.0, 2000.0)
     }
-    
+
     /// Get treble level (2000-20000 Hz).
     pub fn get_treble(&self) -> f32 {
         self.get_frequency_range(2000.0, 20000.0)
     }
-    
+
     /// Get energy in a frequency range.
     fn get_frequency_range(&self, min_freq: f32, max_freq: f32) -> f32 {
         let bin_width = self.sample_rate / self.fft_size as f32;
         let min_bin = (min_freq / bin_width) as usize;
         let max_bin = ((max_freq / bin_width) as usize).min(self.bins.len());
-        
+
         if min_bin >= max_bin {
             return 0.0;
         }
-        
+
         let sum: f32 = self.bins[min_bin..max_bin].iter().sum();
         sum / (max_bin - min_bin) as f32
     }
-    
+
     /// Simple in-place FFT (Cooley-Tukey algorithm).
     fn fft_inplace(&mut self) {
         let n = self.fft_size;
-        
+
         // Bit-reversal permutation
         let mut j = 0;
         for i in 0..n {
@@ -139,7 +144,7 @@ impl FFTAnalyzer {
                 self.fft_buffer.swap(i * 2, j * 2);
                 self.fft_buffer.swap(i * 2 + 1, j * 2 + 1);
             }
-            
+
             let mut m = n / 2;
             while m >= 1 && j >= m {
                 j -= m;
@@ -147,44 +152,44 @@ impl FFTAnalyzer {
             }
             j += m;
         }
-        
+
         // FFT computation
         let mut len = 2;
         while len <= n {
             let angle = -2.0 * PI / len as f32;
             let wlen_real = angle.cos();
             let wlen_imag = angle.sin();
-            
+
             let mut i = 0;
             while i < n {
                 let mut w_real = 1.0;
                 let mut w_imag = 0.0;
-                
+
                 for j in 0..len / 2 {
                     let u_idx = (i + j) * 2;
                     let v_idx = (i + j + len / 2) * 2;
-                    
+
                     let u_real = self.fft_buffer[u_idx];
                     let u_imag = self.fft_buffer[u_idx + 1];
                     let v_real = self.fft_buffer[v_idx];
                     let v_imag = self.fft_buffer[v_idx + 1];
-                    
+
                     let t_real = w_real * v_real - w_imag * v_imag;
                     let t_imag = w_real * v_imag + w_imag * v_real;
-                    
+
                     self.fft_buffer[u_idx] = u_real + t_real;
                     self.fft_buffer[u_idx + 1] = u_imag + t_imag;
                     self.fft_buffer[v_idx] = u_real - t_real;
                     self.fft_buffer[v_idx + 1] = u_imag - t_imag;
-                    
+
                     let w_temp = w_real;
                     w_real = w_real * wlen_real - w_imag * wlen_imag;
                     w_imag = w_temp * wlen_imag + w_imag * wlen_real;
                 }
-                
+
                 i += len;
             }
-            
+
             len *= 2;
         }
     }
@@ -209,14 +214,13 @@ mod tests {
         let bins = analyzer.analyze(&samples);
 
         // Check that we got some output
-        assert!(bins.len() > 0);
+        assert!(!bins.is_empty());
 
         // The peak should be around 440 Hz (handle NaN gracefully)
-        let peak_bin = bins.iter()
+        let peak_bin = bins
+            .iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| {
-                a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
-            })
+            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(i, _)| i)
             .unwrap();
 
@@ -231,9 +235,7 @@ mod tests {
         let mut analyzer = FFTAnalyzer::new(512, 44100.0).expect("512 is valid FFT size");
 
         // Generate white noise
-        let samples: Vec<f32> = (0..512)
-            .map(|i| (i as f32 * 0.1).sin())
-            .collect();
+        let samples: Vec<f32> = (0..512).map(|i| (i as f32 * 0.1).sin()).collect();
 
         analyzer.analyze(&samples);
 
@@ -252,7 +254,7 @@ mod tests {
         // Invalid sizes should return None
         assert!(FFTAnalyzer::new(0, 44100.0).is_none());
         assert!(FFTAnalyzer::new(100, 44100.0).is_none()); // Not power of 2
-        assert!(FFTAnalyzer::new(3, 44100.0).is_none());   // Not power of 2
+        assert!(FFTAnalyzer::new(3, 44100.0).is_none()); // Not power of 2
 
         // Valid sizes should work
         assert!(FFTAnalyzer::new(256, 44100.0).is_some());

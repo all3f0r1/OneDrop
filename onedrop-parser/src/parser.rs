@@ -1,30 +1,20 @@
-//! Parser implementation for .milk files using nom.
+//! Parser implementation for .milk files.
 
 use crate::error::{ParseError, Result};
 use crate::preset::*;
-use nom::{
-    branch::alt,
-    bytes::complete::{tag, take_until, take_while, take_while1},
-    character::complete::{alpha1, alphanumeric1, char, digit1, line_ending, multispace0, space0},
-    combinator::{map, map_res, opt, recognize},
-    multi::{many0, many1, separated_list0},
-    sequence::{delimited, pair, preceded, separated_pair, terminated, tuple},
-    IResult,
-};
-use std::collections::HashMap;
 
 /// Parse a complete .milk preset file.
 pub fn parse_milk_preset(input: &str) -> Result<MilkPreset> {
     let mut preset = MilkPreset::default();
     let mut lines = input.lines().enumerate();
-    
+
     // Parse header
-    for (line_num, line) in lines.by_ref() {
+    for (_line_num, line) in lines.by_ref() {
         let line = line.trim();
         if line.is_empty() {
             continue;
         }
-        
+
         if line.starts_with("MILKDROP_PRESET_VERSION=") {
             preset.version = parse_version_line(line)?;
         } else if line.starts_with("PSVERSION_WARP=") {
@@ -36,14 +26,14 @@ pub fn parse_milk_preset(input: &str) -> Result<MilkPreset> {
             break;
         }
     }
-    
+
     // Parse preset body
-    for (line_num, line) in lines {
+    for (_line_num, line) in lines {
         let line = line.trim();
         if line.is_empty() {
             continue;
         }
-        
+
         // Parse per-frame equations
         if line.starts_with("per_frame_") {
             if let Some(equation) = parse_equation_line(line) {
@@ -89,7 +79,7 @@ pub fn parse_milk_preset(input: &str) -> Result<MilkPreset> {
             parse_parameter(key.trim(), value.trim(), &mut preset.parameters)?;
         }
     }
-    
+
     Ok(preset)
 }
 
@@ -135,7 +125,7 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
             reason: "Expected float".to_string(),
         })
     };
-    
+
     // Helper to parse int
     let parse_i32 = |v: &str| -> Result<i32> {
         v.parse().map_err(|_| ParseError::InvalidParameter {
@@ -144,7 +134,7 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
             reason: "Expected integer".to_string(),
         })
     };
-    
+
     // Helper to parse bool
     let parse_bool = |v: &str| -> Result<bool> {
         match v {
@@ -157,7 +147,7 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
             }),
         }
     };
-    
+
     match key {
         // Float parameters
         "fRating" => params.f_rating = parse_f32(value)?,
@@ -175,7 +165,7 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
         "fWarpScale" => params.f_warp_scale = parse_f32(value)?,
         "fZoomExponent" => params.f_zoom_exponent = parse_f32(value)?,
         "fShader" => params.f_shader = parse_f32(value)?,
-        
+
         // Motion parameters
         "zoom" => params.zoom = parse_f32(value)?,
         "rot" => params.rot = parse_f32(value)?,
@@ -186,14 +176,14 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
         "warp" => params.warp = parse_f32(value)?,
         "sx" => params.sx = parse_f32(value)?,
         "sy" => params.sy = parse_f32(value)?,
-        
+
         // Wave colors
         "wave_r" => params.wave_r = parse_f32(value)?,
         "wave_g" => params.wave_g = parse_f32(value)?,
         "wave_b" => params.wave_b = parse_f32(value)?,
         "wave_x" => params.wave_x = parse_f32(value)?,
         "wave_y" => params.wave_y = parse_f32(value)?,
-        
+
         // Borders
         "ob_size" => params.ob_size = parse_f32(value)?,
         "ob_r" => params.ob_r = parse_f32(value)?,
@@ -205,7 +195,7 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
         "ib_g" => params.ib_g = parse_f32(value)?,
         "ib_b" => params.ib_b = parse_f32(value)?,
         "ib_a" => params.ib_a = parse_f32(value)?,
-        
+
         // Motion vectors
         "nMotionVectorsX" => params.n_motion_vectors_x = parse_f32(value)?,
         "nMotionVectorsY" => params.n_motion_vectors_y = parse_f32(value)?,
@@ -216,7 +206,7 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
         "mv_g" => params.mv_g = parse_f32(value)?,
         "mv_b" => params.mv_b = parse_f32(value)?,
         "mv_a" => params.mv_a = parse_f32(value)?,
-        
+
         // Beat detection
         "b1n" => params.b1n = parse_f32(value)?,
         "b2n" => params.b2n = parse_f32(value)?,
@@ -225,11 +215,11 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
         "b2x" => params.b2x = parse_f32(value)?,
         "b3x" => params.b3x = parse_f32(value)?,
         "b1ed" => params.b1ed = parse_f32(value)?,
-        
+
         // Integer parameters
         "nVideoEchoOrientation" => params.n_video_echo_orientation = parse_i32(value)?,
         "nWaveMode" => params.n_wave_mode = parse_i32(value)?,
-        
+
         // Boolean parameters
         "bAdditiveWaves" => params.b_additive_waves = parse_bool(value)?,
         "bWaveDots" => params.b_wave_dots = parse_bool(value)?,
@@ -243,13 +233,13 @@ fn parse_parameter(key: &str, value: &str, params: &mut PresetParameters) -> Res
         "bDarken" => params.b_darken = parse_bool(value)?,
         "bSolarize" => params.b_solarize = parse_bool(value)?,
         "bInvert" => params.b_invert = parse_bool(value)?,
-        
+
         // Unknown parameters go to extra map
         _ => {
             params.extra.insert(key.to_string(), value.to_string());
         }
     }
-    
+
     Ok(())
 }
 
@@ -261,13 +251,13 @@ fn parse_wavecode_line(line: &str, waves: &mut Vec<WaveCode>) -> Result<()> {
     if parts.len() < 3 {
         return Ok(()); // Skip malformed lines
     }
-    
+
     let index: usize = parts[1].parse().unwrap_or(0);
     let param_and_value = line.split_once('=');
-    
+
     if let Some((param_full, value)) = param_and_value {
         let param = param_full.split('_').skip(2).collect::<Vec<_>>().join("_");
-        
+
         // Ensure wave exists
         while waves.len() <= index {
             waves.push(WaveCode {
@@ -290,7 +280,7 @@ fn parse_wavecode_line(line: &str, waves: &mut Vec<WaveCode>) -> Result<()> {
                 per_frame_init_equations: Vec::new(),
             });
         }
-        
+
         // Parse parameter
         let wave = &mut waves[index];
         match param.as_str() {
@@ -310,7 +300,7 @@ fn parse_wavecode_line(line: &str, waves: &mut Vec<WaveCode>) -> Result<()> {
             _ => {} // Ignore unknown parameters
         }
     }
-    
+
     Ok(())
 }
 
@@ -322,13 +312,13 @@ fn parse_shapecode_line(line: &str, shapes: &mut Vec<ShapeCode>) -> Result<()> {
     if parts.len() < 3 {
         return Ok(()); // Skip malformed lines
     }
-    
+
     let index: usize = parts[1].parse().unwrap_or(0);
     let param_and_value = line.split_once('=');
-    
+
     if let Some((param_full, value)) = param_and_value {
         let param = param_full.split('_').skip(2).collect::<Vec<_>>().join("_");
-        
+
         // Ensure shape exists
         while shapes.len() <= index {
             shapes.push(ShapeCode {
@@ -361,7 +351,7 @@ fn parse_shapecode_line(line: &str, shapes: &mut Vec<ShapeCode>) -> Result<()> {
                 per_frame_init_equations: Vec::new(),
             });
         }
-        
+
         // Parse parameter
         let shape = &mut shapes[index];
         match param.as_str() {
@@ -392,7 +382,7 @@ fn parse_shapecode_line(line: &str, shapes: &mut Vec<ShapeCode>) -> Result<()> {
             _ => {} // Ignore unknown parameters
         }
     }
-    
+
     Ok(())
 }
 

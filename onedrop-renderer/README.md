@@ -1,4 +1,4 @@
-# milk-renderer
+# onedrop-renderer
 
 GPU rendering pipeline for Milkdrop visualizations using wgpu.
 

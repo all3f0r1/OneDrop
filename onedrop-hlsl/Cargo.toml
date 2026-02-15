@@ -7,7 +7,7 @@ license = "MIT"
 description = "HLSL to WGSL shader translation for OneDrop"
 
 [dependencies]
-thiserror = "1.0"
+thiserror = "2.0"
 log = "0.4"
 regex = "1.10"
 

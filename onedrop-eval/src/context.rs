@@ -136,15 +136,26 @@ impl MilkContext {
     
     /// Get a variable value.
     pub fn get(&self, name: &str) -> Option<f64> {
-        // Check if it's a q variable
+        // Check if it's a q variable - try evalexpr context first (for assignments via eval)
+        // then fall back to q_vars array (for explicit set calls)
         if name.starts_with('q') && name.len() > 1 {
             if let Ok(index) = name[1..].parse::<usize>() {
                 if index > 0 && index <= 64 {
+                    // First check if it's in the evalexpr context (from eval())
+                    if let Some(value) = self.context.get_value(name) {
+                        match value {
+                            Value::Float(f) => return Some(*f),
+                            Value::Int(i) => return Some(*i as f64),
+                            Value::Boolean(b) => return Some(if *b { 1.0 } else { 0.0 }),
+                            _ => {}
+                        }
+                    }
+                    // Fall back to q_vars array (from set())
                     return Some(self.q_vars[index - 1]);
                 }
             }
         }
-        
+
         // Get from context (evalexpr 13.0 API)
         match self.context.get_value(name) {
             Some(value) => match value {

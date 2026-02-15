@@ -41,25 +41,57 @@ pub struct MilkEngine {
 pub struct EngineConfig {
     /// Render configuration
     pub render_config: RenderConfig,
-    
+
     /// Audio sample rate
     pub sample_rate: f32,
-    
+
     /// Enable per-frame equations
     pub enable_per_frame: bool,
-    
+
     /// Enable per-pixel equations
     pub enable_per_pixel: bool,
 }
 
+/// Quality preset for engine configuration.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QualityPreset {
+    /// Low quality - per-pixel disabled, optimized for performance
+    Low,
+    /// Medium quality - balanced settings (default)
+    Medium,
+    /// High quality - all features enabled
+    High,
+}
+
+impl EngineConfig {
+    /// Create configuration from a quality preset.
+    pub fn from_preset(preset: QualityPreset) -> Self {
+        match preset {
+            QualityPreset::Low => Self {
+                render_config: RenderConfig::default(),
+                sample_rate: 44100.0,
+                enable_per_frame: true,
+                enable_per_pixel: false,
+            },
+            QualityPreset::Medium => Self {
+                render_config: RenderConfig::default(),
+                sample_rate: 44100.0,
+                enable_per_frame: true,
+                enable_per_pixel: false,
+            },
+            QualityPreset::High => Self {
+                render_config: RenderConfig::default(),
+                sample_rate: 44100.0,
+                enable_per_frame: true,
+                enable_per_pixel: true,
+            },
+        }
+    }
+}
+
 impl Default for EngineConfig {
     fn default() -> Self {
-        Self {
-            render_config: RenderConfig::default(),
-            sample_rate: 44100.0,
-            enable_per_frame: true,
-            enable_per_pixel: false, // Disabled by default (expensive)
-        }
+        Self::from_preset(QualityPreset::Medium)
     }
 }
 

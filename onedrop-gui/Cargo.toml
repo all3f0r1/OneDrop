@@ -1,7 +1,7 @@
 [package]
 name = "onedrop-gui"
 version = "0.2.0"
-edition = "2021"
+edition = "2024"
 authors = ["Manus AI"]
 license = "MIT"
 description = "Graphical user interface for OneDrop Milkdrop visualizer"
@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 # OneDrop engine
-onedrop-engine = { path = "../onedrop-engine" }
+onedrop-engine = { path = "../onedrop-engine", features = ["audio-input"] }
 onedrop-parser = { path = "../onedrop-parser" }
 onedrop-renderer = { path = "../onedrop-renderer" }
 

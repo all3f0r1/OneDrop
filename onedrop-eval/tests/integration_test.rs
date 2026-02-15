@@ -36,10 +36,13 @@ fn test_real_world_per_frame_equations() {
 #[test]
 fn test_real_world_per_pixel_equations() {
     let mut eval = MilkEvaluator::new();
-    
-    // Initialize context
+
+    // Initialize context with audio levels
     eval.context_mut().set_time(1.0);
     eval.context_mut().set_audio(0.8, 0.5, 0.9);
+    // Set attenuated audio values (normally computed by audio analyzer)
+    eval.context_mut().set("bass_att", 0.8);
+    eval.context_mut().set("treb_att", 0.9);
     eval.context_mut().set_var("zoom", 1.0);
     
     // Real equations from preset "10.milk"
@@ -125,18 +128,22 @@ fn test_multiple_assignments_in_sequence() {
 #[test]
 fn test_edge_cases() {
     let mut eval = MilkEvaluator::new();
-    
+
     // Empty expression
     let result = eval.eval("").unwrap();
     assert_relative_eq!(result, 0.0);
-    
-    // Expression with semicolon
+
+    // Expression with semicolon - assignment returns 0.0 but sets variable
     let result = eval.eval("zoom = 1.5;").unwrap();
-    assert_relative_eq!(result, 1.5);
-    
+    assert_relative_eq!(result, 0.0); // Assignments return Empty -> 0.0
+    let zoom = eval.context().get_var("zoom").unwrap();
+    assert_relative_eq!(zoom, 1.5); // But the variable is set
+
     // Expression with whitespace
     let result = eval.eval("  zoom = 2.0  ").unwrap();
-    assert_relative_eq!(result, 2.0);
+    assert_relative_eq!(result, 0.0); // Assignments return Empty -> 0.0
+    let zoom = eval.context().get_var("zoom").unwrap();
+    assert_relative_eq!(zoom, 2.0); // But the variable is set
 }
 
 #[test]

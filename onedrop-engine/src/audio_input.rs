@@ -193,7 +193,7 @@ impl AudioAnalysisInput {
         // Extract bass, mid, treb
         // Frequency bins: bin_freq = sample_rate * bin_index / fft_size
         let sample_rate = self.input.sample_rate() as f32;
-        let bin_to_freq = |bin: usize| sample_rate * bin as f32 / self.fft_size as f32;
+        let _bin_to_freq = |bin: usize| sample_rate * bin as f32 / self.fft_size as f32;
 
         // Bass: 20-250 Hz
         // Mid: 250-2000 Hz

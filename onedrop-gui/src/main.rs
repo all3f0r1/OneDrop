@@ -1,7 +1,7 @@
 //! OneDrop GUI - Graphical user interface for Milkdrop visualizations
 
 use anyhow::Result;
-use onedrop_engine::{BeatDetectionMode, EngineConfig, MilkEngine, PresetChange, PresetManager, RenderConfig};
+use onedrop_engine::{AudioInput, BeatDetectionMode, EngineConfig, MilkEngine, PresetChange, PresetManager, RenderConfig};
 use std::sync::Arc;
 use std::time::Instant;
 use winit::{
@@ -19,15 +19,18 @@ struct App {
     device: Option<Arc<wgpu::Device>>,
     queue: Option<Arc<wgpu::Queue>>,
     engine: Option<MilkEngine>,
+    audio_input: Option<AudioInput>,
     preset_manager: PresetManager,
     last_frame: Instant,
     frame_count: u32,
+    /// Fallback to demo mode if audio input fails
+    demo_mode: bool,
 }
 
 impl App {
     fn new() -> Self {
         let mut preset_manager = PresetManager::new();
-        
+
         // Add some default presets if available
         if let Ok(entries) = std::fs::read_dir("../test-presets") {
             for entry in entries.flatten() {
@@ -37,7 +40,20 @@ impl App {
                 }
             }
         }
-        
+
+        // Try to initialize audio input
+        let audio_input = match AudioInput::new() {
+            Ok(input) => {
+                log::info!("Real audio input initialized successfully");
+                Some(input)
+            }
+            Err(e) => {
+                log::warn!("Failed to initialize audio input: {}. Falling back to demo mode.", e);
+                None
+            }
+        };
+        let demo_mode = audio_input.is_none();
+
         Self {
             window: None,
             surface: None,
@@ -45,9 +61,11 @@ impl App {
             device: None,
             queue: None,
             engine: None,
+            audio_input,
             preset_manager,
             last_frame: Instant::now(),
             frame_count: 0,
+            demo_mode,
         }
     }
     
@@ -119,7 +137,15 @@ impl App {
         
         // Share device and queue with engine
         let engine = MilkEngine::from_device(Arc::clone(&device), Arc::clone(&queue), engine_config)?;
-        
+
+        // Update window title to show audio mode
+        let title = if self.demo_mode {
+            "OneDrop - Milkdrop Visualizer [Demo Mode - No Audio Input]"
+        } else {
+            "OneDrop - Milkdrop Visualizer [Live Audio]"
+        };
+        window.set_title(title);
+
         self.window = Some(window);
         self.surface = Some(surface);
         self.surface_config = Some(config);
@@ -155,14 +181,20 @@ impl App {
         let now = Instant::now();
         let delta_time = (now - self.last_frame).as_secs_f32();
         self.last_frame = now;
-        
-        // Generate audio samples (sine wave for demo)
-        let audio_samples: Vec<f32> = (0..1024)
-            .map(|i| {
-                let t = (self.frame_count * 1024 + i) as f32 * 0.001;
-                (t * 2.0 * std::f32::consts::PI * 60.0).sin() * 0.5
-            })
-            .collect();
+
+        // Get audio samples - use real audio input or fall back to demo mode
+        let audio_samples: Vec<f32> = if let Some(ref audio_input) = self.audio_input {
+            // Use real audio capture
+            audio_input.get_fixed_samples(1024)
+        } else {
+            // Fallback: generate demo audio (sine wave)
+            (0..1024)
+                .map(|i| {
+                    let t = (self.frame_count * 1024 + i) as f32 * 0.001;
+                    (t * 2.0 * std::f32::consts::PI * 60.0).sin() * 0.5
+                })
+                .collect()
+        };
         
         // Update engine
         let preset_change = engine.update(&audio_samples, delta_time)?;
@@ -193,7 +225,7 @@ impl App {
         
         // Get surface texture
         let output = surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let _view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         
         // Create command encoder
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {

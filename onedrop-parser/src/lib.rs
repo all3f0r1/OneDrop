@@ -21,8 +21,12 @@ pub use preset::MilkPreset;
 /// ```
 /// use onedrop_parser::parse_preset;
 ///
-/// let content = std::fs::read_to_string("preset.milk").unwrap();
-/// let preset = parse_preset(&content).unwrap();
+/// let content = r#"MILKDROP_PRESET_VERSION=201
+/// [preset00]
+/// fRating=5.000000
+/// zoom=0.99197
+/// "#;
+/// let preset = parse_preset(content).unwrap();
 /// println!("Preset version: {}", preset.version);
 /// ```
 pub fn parse_preset(input: &str) -> Result<MilkPreset> {

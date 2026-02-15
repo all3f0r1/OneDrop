@@ -159,7 +159,6 @@ mod tests {
     use approx::assert_relative_eq;
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_simple_expression() {
         let mut eval = MilkEvaluator::new();
         let result = eval.eval("2 + 2").unwrap();
@@ -167,93 +166,86 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_math_functions() {
         let mut eval = MilkEvaluator::new();
-        
+
         let result = eval.eval("sin(0)").unwrap();
         assert_relative_eq!(result, 0.0, epsilon = 1e-10);
-        
+
         let result = eval.eval("cos(0)").unwrap();
         assert_relative_eq!(result, 1.0, epsilon = 1e-10);
-        
+
         let result = eval.eval("sqrt(16)").unwrap();
         assert_relative_eq!(result, 4.0);
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_variable_assignment() {
         let mut eval = MilkEvaluator::new();
-        
+
         eval.eval("zoom = 1.5").unwrap();
         let zoom = eval.context().get_var("zoom").unwrap();
         assert_relative_eq!(zoom, 1.5);
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_variable_usage() {
         let mut eval = MilkEvaluator::new();
-        
+
         eval.context_mut().set_var("time", 1.0);
         let result = eval.eval("time * 2").unwrap();
         assert_relative_eq!(result, 2.0);
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_complex_expression() {
         let mut eval = MilkEvaluator::new();
         eval.context_mut().set_var("time", 1.0);
-        
+
         let result = eval.eval("0.5 + 0.4 * sin(time * 2)").unwrap();
         let expected = 0.5 + 0.4 * (1.0_f64 * 2.0).sin();
         assert_relative_eq!(result, expected, epsilon = 1e-10);
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_per_frame_equations() {
         let mut eval = MilkEvaluator::new();
-        
+
         let equations = vec![
             "wave_r = 0.5".to_string(),
             "wave_g = 0.3".to_string(),
             "wave_b = 0.7".to_string(),
         ];
-        
+
         eval.eval_per_frame(&equations).unwrap();
-        
+
         assert_relative_eq!(eval.context().get_var("wave_r").unwrap(), 0.5);
         assert_relative_eq!(eval.context().get_var("wave_g").unwrap(), 0.3);
         assert_relative_eq!(eval.context().get_var("wave_b").unwrap(), 0.7);
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_per_pixel_equations() {
         let mut eval = MilkEvaluator::new();
-        
+
         let equations = vec![
             "zoom = zoom + 0.1 * rad".to_string(),
         ];
-        
+
         eval.context_mut().set_var("zoom", 1.0);
         eval.eval_per_pixel(0.5, 0.5, 0.5, 0.0, &equations).unwrap();
-        
+
         let zoom = eval.context().get_var("zoom").unwrap();
         assert_relative_eq!(zoom, 1.05);
     }
 
     #[test]
-    #[ignore] // TODO: Add math functions to evalexpr 13.0 context
     fn test_q_variables() {
         let mut eval = MilkEvaluator::new();
-        
+
         eval.eval("q1 = 42").unwrap();
         eval.eval("q2 = q1 * 2").unwrap();
-        
+
         assert_relative_eq!(eval.context().get_var("q1").unwrap(), 42.0);
         assert_relative_eq!(eval.context().get_var("q2").unwrap(), 84.0);
     }

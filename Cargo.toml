@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 members = [
     "onedrop-hlsl",
     "onedrop-codegen",
@@ -13,7 +14,7 @@ members = [
 
 [workspace.package]
 version = "0.2.0"
-edition = "2021"
+edition = "2024"
 authors = ["Manus AI"]
 license = "MIT"
 

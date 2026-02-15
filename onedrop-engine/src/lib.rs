@@ -23,7 +23,7 @@ pub use audio::AudioAnalyzer;
 pub use audio_input::{AudioAnalysisInput, AudioInput, AudioInputError};
 pub use beat_detection::{BeatDetectionMode, BeatDetector, PresetChange};
 pub use default_preset::default_preset;
-pub use engine::{EngineConfig, MilkEngine};
+pub use engine::{EngineConfig, MilkEngine, QualityPreset};
 pub use error::{EngineError, Result};
 pub use safe_loader::SafePresetLoader;
 pub use fft::FFTAnalyzer;

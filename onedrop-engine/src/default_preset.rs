@@ -87,17 +87,17 @@ per_frame_5=zoom = zoom + 0.010*sin(time*0.339);
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_default_preset() {
         let preset = default_preset();
-        
-        // Should have version
-        assert_eq!(preset.version, 257);
-        
+
+        // Should have version 201 (MilkDrop 2.0 format)
+        assert_eq!(preset.version, 201);
+
         // Should have some per-frame equations
         assert!(!preset.per_frame_equations.is_empty());
-        
+
         // Should have valid parameters
         assert!(preset.parameters.zoom > 0.0);
     }

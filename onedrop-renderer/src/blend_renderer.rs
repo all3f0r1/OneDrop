@@ -4,16 +4,26 @@
 //! 27 different blending patterns.
 
 use crate::error::{RenderError, Result};
-use wgpu::{Device, Queue, Texture, TextureView};
+use std::sync::Arc;
+use wgpu::{Device, Queue, TextureView};
 
 /// Blend renderer for double-presets.
 pub struct BlendRenderer {
-    device: Device,
-    queue: Queue,
+    device: Arc<Device>,
+    queue: Arc<Queue>,
     pipeline: wgpu::RenderPipeline,
     bind_group_layout: wgpu::BindGroupLayout,
     uniform_buffer: wgpu::Buffer,
     sampler: wgpu::Sampler,
+    /// Cached bind group key and bind group for texture pair
+    cached_bind_group: Option<CachedBindGroup>,
+}
+
+/// Holds cached bind group data
+struct CachedBindGroup {
+    key_a: usize,
+    key_b: usize,
+    bind_group: wgpu::BindGroup,
 }
 
 #[repr(C)]
@@ -27,7 +37,7 @@ struct BlendUniforms {
 
 impl BlendRenderer {
     /// Create a new blend renderer.
-    pub fn new(device: Device, queue: Queue, texture_format: wgpu::TextureFormat) -> Result<Self> {
+    pub fn new(device: Arc<Device>, queue: Arc<Queue>, texture_format: wgpu::TextureFormat) -> Result<Self> {
         // Create uniform buffer
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Blend Uniform Buffer"),
@@ -154,29 +164,35 @@ impl BlendRenderer {
             bind_group_layout,
             uniform_buffer,
             sampler,
+            cached_bind_group: None,
         })
     }
-    
-    /// Render blended output.
-    pub fn render(
-        &self,
+
+    /// Check if cached bind group matches texture pair
+    fn is_cached(&self, key_a: usize, key_b: usize) -> bool {
+        if let Some(ref cached) = self.cached_bind_group {
+            cached.key_a == key_a && cached.key_b == key_b
+        } else {
+            false
+        }
+    }
+
+    /// Get or create a cached bind group for the texture pair.
+    fn get_cached_bind_group(&self) -> Option<&wgpu::BindGroup> {
+        self.cached_bind_group.as_ref().map(|c| &c.bind_group)
+    }
+
+    /// Create and cache a new bind group for the texture pair.
+    fn create_and_cache_bind_group(
+        &mut self,
         texture_a: &TextureView,
         texture_b: &TextureView,
-        output: &TextureView,
-        blend_pattern: u32,
-        blend_amount: f32,
-        time: f32,
-    ) -> Result<()> {
-        // Update uniforms
-        let uniforms = BlendUniforms {
-            blend_pattern,
-            blend_amount,
-            time,
-            _padding: 0.0,
-        };
-        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
-        
-        // Create bind group
+    ) {
+        // Use pointer addresses as cache keys (texture views are immutable)
+        let key_a = texture_a as *const _ as usize;
+        let key_b = texture_b as *const _ as usize;
+
+        // Create new bind group
         let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Blend Bind Group"),
             layout: &self.bind_group_layout,
@@ -199,6 +215,43 @@ impl BlendRenderer {
                 },
             ],
         });
+
+        // Cache for future use
+        self.cached_bind_group = Some(CachedBindGroup {
+            key_a,
+            key_b,
+            bind_group,
+        });
+    }
+
+    /// Render blended output.
+    pub fn render(
+        &mut self,
+        texture_a: &TextureView,
+        texture_b: &TextureView,
+        output: &TextureView,
+        blend_pattern: u32,
+        blend_amount: f32,
+        time: f32,
+    ) -> Result<()> {
+        // Update uniforms
+        let uniforms = BlendUniforms {
+            blend_pattern,
+            blend_amount,
+            time,
+            _padding: 0.0,
+        };
+        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+
+        // Check if we need to create a new bind group
+        let key_a = texture_a as *const _ as usize;
+        let key_b = texture_b as *const _ as usize;
+
+        if !self.is_cached(key_a, key_b) {
+            self.create_and_cache_bind_group(texture_a, texture_b);
+        }
+
+        let bind_group = self.get_cached_bind_group().expect("bind group should be cached");
         
         // Create command encoder
         let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -223,7 +276,7 @@ impl BlendRenderer {
             });
             
             render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_bind_group(0, &bind_group, &[]);
+            render_pass.set_bind_group(0, bind_group, &[]);
             render_pass.draw(0..3, 0..1);
         }
         

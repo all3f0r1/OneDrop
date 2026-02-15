@@ -142,10 +142,14 @@ impl App {
     }
     
     fn render(&mut self) -> Result<()> {
-        let surface = self.surface.as_ref().unwrap();
-        let device = self.device.as_ref().unwrap();
-        let queue = self.queue.as_ref().unwrap();
-        let engine = self.engine.as_mut().unwrap();
+        let surface = self.surface.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Graphics not initialized: surface"))?;
+        let device = self.device.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Graphics not initialized: device"))?;
+        let queue = self.queue.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Graphics not initialized: queue"))?;
+        let engine = self.engine.as_mut()
+            .ok_or_else(|| anyhow::anyhow!("Graphics not initialized: engine"))?;
         
         // Calculate delta time
         let now = Instant::now();
@@ -212,8 +216,12 @@ impl App {
                 aspect: wgpu::TextureAspect::All,
             },
             wgpu::Extent3d {
-                width: self.surface_config.as_ref().unwrap().width,
-                height: self.surface_config.as_ref().unwrap().height,
+                width: self.surface_config.as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Graphics not initialized: surface_config"))?
+                    .width,
+                height: self.surface_config.as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Graphics not initialized: surface_config"))?
+                    .height,
                 depth_or_array_layers: 1,
             },
         );

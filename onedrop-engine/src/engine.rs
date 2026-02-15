@@ -100,9 +100,25 @@ impl MilkEngine {
     
     /// Load a preset from file.
     pub fn load_preset<P: AsRef<Path>>(&mut self, path: P) -> Result<()> {
+        const MAX_PRESET_SIZE: u64 = 10 * 1024 * 1024; // 10MB limit
+
         let path_ref = path.as_ref();
         log::info!("Loading preset: {}", path_ref.display());
-        
+
+        // Validate file size before loading
+        let metadata = fs::metadata(path_ref).map_err(|e| {
+            log::error!("Failed to read file metadata {}: {}", path_ref.display(), e);
+            EngineError::PresetLoadFailed(format!("Cannot read file metadata: {}", e))
+        })?;
+
+        if metadata.len() > MAX_PRESET_SIZE {
+            log::error!("Preset file too large: {} bytes (max {})", metadata.len(), MAX_PRESET_SIZE);
+            return Err(EngineError::PresetLoadFailed(format!(
+                "File too large: {} bytes (max {} bytes)",
+                metadata.len(), MAX_PRESET_SIZE
+            )));
+        }
+
         // Read file
         let content = fs::read_to_string(path_ref).map_err(|e| {
             log::error!("Failed to read preset file {}: {}", path_ref.display(), e);

@@ -6,24 +6,42 @@ use std::f32::consts::PI;
 pub struct FFTAnalyzer {
     /// FFT size (power of 2)
     fft_size: usize,
-    
+
     /// Window function (Hann window)
     window: Vec<f32>,
-    
+
     /// FFT buffer (real and imaginary parts)
     fft_buffer: Vec<f32>,
-    
+
     /// Frequency bins
     bins: Vec<f32>,
-    
+
     /// Sample rate
     sample_rate: f32,
 }
 
+/// Error type for FFT operations
+#[derive(Debug, Clone)]
+pub struct FFTError {
+    pub message: String,
+}
+
+impl std::fmt::Display for FFTError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FFT Error: {}", self.message)
+    }
+}
+
+impl std::error::Error for FFTError {}
+
 impl FFTAnalyzer {
     /// Create a new FFT analyzer.
-    pub fn new(fft_size: usize, sample_rate: f32) -> Self {
-        assert!(fft_size.is_power_of_two(), "FFT size must be power of 2");
+    /// Returns None if fft_size is not a power of 2.
+    pub fn new(fft_size: usize, sample_rate: f32) -> Option<Self> {
+        if !fft_size.is_power_of_two() || fft_size == 0 {
+            log::warn!("FFT size must be a power of 2, got {}", fft_size);
+            return None;
+        }
         
         // Create Hann window
         let window: Vec<f32> = (0..fft_size)
@@ -32,14 +50,23 @@ impl FFTAnalyzer {
                 0.5 * (1.0 - (2.0 * PI * x).cos())
             })
             .collect();
-        
-        Self {
+
+        Some(Self {
             fft_size,
             window,
             fft_buffer: vec![0.0; fft_size * 2], // Real + imaginary
             bins: vec![0.0; fft_size / 2],
             sample_rate,
-        }
+        })
+    }
+
+    /// Create a new FFT analyzer, panicking on invalid input.
+    /// Use `new` for fallible construction.
+    pub fn new_or_default(fft_size: usize, sample_rate: f32) -> Self {
+        Self::new(fft_size, sample_rate).unwrap_or_else(|| {
+            log::warn!("Invalid FFT size {}, using default 256", fft_size);
+            Self::new(256, sample_rate).expect("256 is always valid")
+        })
     }
     
     /// Analyze audio samples and return frequency bins.
@@ -169,8 +196,8 @@ mod tests {
 
     #[test]
     fn test_fft_analyzer() {
-        let mut analyzer = FFTAnalyzer::new(256, 44100.0);
-        
+        let mut analyzer = FFTAnalyzer::new(256, 44100.0).expect("256 is valid FFT size");
+
         // Generate a simple sine wave at 440 Hz (A4)
         let samples: Vec<f32> = (0..256)
             .map(|i| {
@@ -178,43 +205,58 @@ mod tests {
                 (2.0 * PI * 440.0 * t).sin()
             })
             .collect();
-        
+
         let bins = analyzer.analyze(&samples);
-        
+
         // Check that we got some output
         assert!(bins.len() > 0);
-        
-        // The peak should be around 440 Hz
+
+        // The peak should be around 440 Hz (handle NaN gracefully)
         let peak_bin = bins.iter()
             .enumerate()
-            .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+            .max_by(|(_, a), (_, b)| {
+                a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)
+            })
             .map(|(i, _)| i)
             .unwrap();
-        
+
         let peak_freq = peak_bin as f32 * 44100.0 / 256.0;
-        
+
         // Should be close to 440 Hz (within 200 Hz tolerance)
         assert!((peak_freq - 440.0).abs() < 200.0);
     }
 
     #[test]
     fn test_frequency_ranges() {
-        let mut analyzer = FFTAnalyzer::new(512, 44100.0);
-        
+        let mut analyzer = FFTAnalyzer::new(512, 44100.0).expect("512 is valid FFT size");
+
         // Generate white noise
         let samples: Vec<f32> = (0..512)
             .map(|i| (i as f32 * 0.1).sin())
             .collect();
-        
+
         analyzer.analyze(&samples);
-        
+
         let bass = analyzer.get_bass();
         let mid = analyzer.get_mid();
         let treble = analyzer.get_treble();
-        
+
         // All should be non-negative
         assert!(bass >= 0.0);
         assert!(mid >= 0.0);
         assert!(treble >= 0.0);
+    }
+
+    #[test]
+    fn test_invalid_fft_size() {
+        // Invalid sizes should return None
+        assert!(FFTAnalyzer::new(0, 44100.0).is_none());
+        assert!(FFTAnalyzer::new(100, 44100.0).is_none()); // Not power of 2
+        assert!(FFTAnalyzer::new(3, 44100.0).is_none());   // Not power of 2
+
+        // Valid sizes should work
+        assert!(FFTAnalyzer::new(256, 44100.0).is_some());
+        assert!(FFTAnalyzer::new(512, 44100.0).is_some());
+        assert!(FFTAnalyzer::new(1024, 44100.0).is_some());
     }
 }

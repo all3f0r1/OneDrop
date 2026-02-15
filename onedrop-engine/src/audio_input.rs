@@ -70,10 +70,11 @@ impl AudioInput {
         let stream = device.build_input_stream(
             &stream_config,
             move |data: &[f32], _: &cpal::InputCallbackInfo| {
-                // Copy audio data to buffer
-                let mut buf = buffer_clone.lock().unwrap();
-                buf.clear();
-                buf.extend_from_slice(data);
+                // Copy audio data to buffer (handle mutex poisoning gracefully)
+                if let Ok(mut buf) = buffer_clone.lock() {
+                    buf.clear();
+                    buf.extend_from_slice(data);
+                }
             },
             |err| {
                 log::error!("Audio input stream error: {}", err);
@@ -98,8 +99,9 @@ impl AudioInput {
     /// Get the latest audio samples.
     /// Returns a copy of the current buffer.
     pub fn get_samples(&self) -> Vec<f32> {
-        let buf = self.buffer.lock().unwrap();
-        buf.clone()
+        self.buffer.lock()
+            .map(|buf| buf.clone())
+            .unwrap_or_default()
     }
     
     /// Get the sample rate.
@@ -110,16 +112,18 @@ impl AudioInput {
     /// Get a fixed number of samples for processing.
     /// If not enough samples are available, returns zeros.
     pub fn get_fixed_samples(&self, count: usize) -> Vec<f32> {
-        let buf = self.buffer.lock().unwrap();
-        
-        if buf.len() >= count {
-            buf[..count].to_vec()
-        } else {
-            // Pad with zeros if not enough samples
-            let mut result = buf.clone();
-            result.resize(count, 0.0);
-            result
-        }
+        self.buffer.lock()
+            .map(|buf| {
+                if buf.len() >= count {
+                    buf[..count].to_vec()
+                } else {
+                    // Pad with zeros if not enough samples
+                    let mut result = buf.clone();
+                    result.resize(count, 0.0);
+                    result
+                }
+            })
+            .unwrap_or_else(|_| vec![0.0; count])
     }
 }
 
@@ -190,16 +194,32 @@ impl AudioAnalysisInput {
         // Frequency bins: bin_freq = sample_rate * bin_index / fft_size
         let sample_rate = self.input.sample_rate() as f32;
         let bin_to_freq = |bin: usize| sample_rate * bin as f32 / self.fft_size as f32;
-        
+
         // Bass: 20-250 Hz
         // Mid: 250-2000 Hz
         // Treb: 2000-20000 Hz
         let bass_end = (250.0 * self.fft_size as f32 / sample_rate) as usize;
         let mid_end = (2000.0 * self.fft_size as f32 / sample_rate) as usize;
-        
-        let bass: f32 = magnitudes[1..bass_end].iter().sum::<f32>() / bass_end as f32;
-        let mid: f32 = magnitudes[bass_end..mid_end].iter().sum::<f32>() / (mid_end - bass_end) as f32;
-        let treb: f32 = magnitudes[mid_end..].iter().sum::<f32>() / (magnitudes.len() - mid_end) as f32;
+
+        // Bounds checking to prevent panics
+        let bass_end = bass_end.max(1).min(magnitudes.len());
+        let mid_end = mid_end.max(bass_end).min(magnitudes.len());
+
+        let bass: f32 = if bass_end > 1 {
+            magnitudes[1..bass_end].iter().sum::<f32>() / (bass_end - 1) as f32
+        } else {
+            0.0
+        };
+        let mid: f32 = if mid_end > bass_end {
+            magnitudes[bass_end..mid_end].iter().sum::<f32>() / (mid_end - bass_end) as f32
+        } else {
+            0.0
+        };
+        let treb: f32 = if magnitudes.len() > mid_end {
+            magnitudes[mid_end..].iter().sum::<f32>() / (magnitudes.len() - mid_end) as f32
+        } else {
+            0.0
+        };
         
         // Normalize to [0, 1] range (approximate)
         let normalize = |x: f32| (x * 10.0).min(1.0);

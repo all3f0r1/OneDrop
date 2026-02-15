@@ -12,7 +12,7 @@ wgpu = "23.0"
 bytemuck = { version = "1.14", features = ["derive"] }
 
 # Math
-glam = "0.29"
+glam = "0.32"
 
 # Error handling
 thiserror = "2.0"

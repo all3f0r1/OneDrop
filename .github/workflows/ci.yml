@@ -78,7 +78,7 @@ jobs:
         run: cargo build --release -p onedrop-gui --features audio-input
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.asset_name }}
           path: target/release/${{ matrix.artifact_name }}
